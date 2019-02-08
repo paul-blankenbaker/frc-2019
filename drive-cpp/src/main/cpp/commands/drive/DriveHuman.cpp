@@ -1,0 +1,226 @@
+#include <Robot.h>
+#include <commands/drive/DriveHuman.h>
+#include <frc/buttons/JoystickButton.h>
+#include <frc/smartdashboard/SendableChooser.h>
+#include <frc/smartdashboard/SmartDashboard.h>
+
+using namespace frc;
+
+namespace {
+// Indicates if driver wants front/back flipped while driving
+bool isFlipped = false;
+// Indicates if driver wants brake mode enabled
+bool brakeMode = false;
+
+// Only need to set up singleton one time
+SendableChooser<int>* modeChooser = 0;
+
+/**
+ * Trivial command to allow user to control what end of the robot is the front.
+ */
+class FlipFront : public Command {
+ private:
+  void updateDashboard() {
+    SmartDashboard::PutBoolean("Flipped Front", isFlipped);
+  }
+
+ public:
+  FlipFront() : Command("FlipFront") {
+    updateDashboard();
+  }
+
+  void Initialize() override {
+    // Change state and publish new state
+    isFlipped = !isFlipped;
+    updateDashboard();
+  }
+
+  bool IsFinished() override {
+    return true;
+  }
+};
+
+/**
+ * Trivial helper command to allow user to control whether brake mode is enabled or not.
+ */
+class BrakeModeToggle : public Command {
+ private:
+  void updateDashboard() {
+    SmartDashboard::PutBoolean("Brake Mode", brakeMode);
+  }
+
+ public:
+  BrakeModeToggle() : Command("BrakeModeToggle") {
+    updateDashboard();
+  }
+
+ protected:
+  void Initialize() override {
+    // Change state and publish new state
+    brakeMode = !brakeMode;
+    updateDashboard();
+  }
+
+  bool IsFinished() override {
+    return true;
+  }
+};
+}  // namespace
+
+//
+// DriveHuman method implementation
+//
+
+DriveHuman::DriveHuman() : Command("HumanDrive", Robot::drive),
+                           squareInputs(true),
+                           quickTurn(false),
+                           mode(kModeArcade),
+                           fixedLeft(0.4),
+                           fixedRight(0.4),
+                           rotationGain(0.5),
+                           slowGain(0.5),
+                           minDeflect(1 / 64.0) {
+  // Only need to set up dashbard drive controls once
+  if (modeChooser == 0) {
+    SmartDashboard::PutBoolean("Quick Turn", quickTurn);
+    SmartDashboard::PutBoolean("Square Inputs", squareInputs);
+    SmartDashboard::PutNumber("Fixed Left", fixedLeft);
+    SmartDashboard::PutNumber("Fixed Right", fixedRight);
+    SmartDashboard::PutNumber("Rotation Gain", rotationGain);
+    SmartDashboard::PutNumber("Slow Gain", slowGain);
+
+    modeChooser = new SendableChooser<int>();
+    modeChooser->SetDefaultOption("Arcade", kModeArcade);
+    modeChooser->AddOption("Tank", kModeTank);
+    modeChooser->AddOption("Curvature", kModeCurvature);
+    modeChooser->AddOption("Fixed", kModeFixed);
+    SmartDashboard::PutData("Drive Mode", modeChooser);
+
+    SmartDashboard::PutData("Brake Control", new BrakeModeToggle());
+    SmartDashboard::PutData("Flip Front", new FlipFront());
+    JoystickButton flipButton(Robot::oi.getDriverJoystick(), 5);
+    flipButton.WhenPressed(new FlipFront());
+  }
+}
+
+/**
+ * Read in and apply current drive choices.
+ */
+void DriveHuman::Initialize() {
+  Robot::drive.setBrakeMode(brakeMode);
+  mode = modeChooser->GetSelected();
+  quickTurn = SmartDashboard::GetBoolean("Quick Turn", quickTurn);
+  squareInputs = SmartDashboard::GetBoolean("Square Inputs", squareInputs);
+  fixedLeft = SmartDashboard::GetNumber("Fixed Left", fixedLeft);
+  fixedRight = SmartDashboard::GetNumber("Fixed Right", fixedRight);
+  rotationGain = SmartDashboard::GetNumber("Rotation Gain", rotationGain);
+  slowGain = SmartDashboard::GetNumber("Slow Gain", slowGain);
+}
+
+bool DriveHuman::IsFinished() {
+  return false;
+}
+
+/**
+ * Drive robot according to options specified during initialization.
+ */
+void DriveHuman::Execute() {
+  double gain = 1.0;
+  double rotGain = rotationGain;
+
+  // Slow-mo mode when user is holding down on button 6
+  if (Robot::oi.readDriverButton(6)) {
+    gain = slowGain;
+    rotGain = slowGain;
+  }
+
+  switch (mode) {
+    case kModeArcade: {
+      double throttle = -Robot::oi.readDriverAxis(kThrottleAxis) * gain;
+      double rotation = Robot::oi.readDriverAxis(kRotationAxis) * rotGain;
+      if (isFlipped) {
+        throttle = -throttle;
+      }
+      Robot::drive.arcadeDrive(throttle, rotation, squareInputs);
+      break;
+    }
+
+    case kModeTank: {
+      double left = -Robot::oi.readDriverAxis(kLeftAxis) * gain;
+      double right = -Robot::oi.readDriverAxis(kRightAxis) * gain;
+      if (isFlipped) {
+        double tmpLeft = -left;
+        left = -right;
+        right = tmpLeft;
+      }
+      Robot::drive.tankDrive(left, right, squareInputs);
+      break;
+    }
+
+    case kModeCurvature: {
+      double throttle = -Robot::oi.readDriverAxis(kThrottleAxis) * gain;
+      double rotation = Robot::oi.readDriverAxis(kRotationAxis) * rotGain;
+      if (isFlipped) {
+        throttle = -throttle;
+      }
+      Robot::drive.curvatureDrive(throttle, rotation, quickTurn);
+      break;
+    }
+
+    case kModeFixed:
+      driveFixed(gain, rotGain);
+      break;
+
+    default:
+      // Unknown mode, stop driving
+      Robot::drive.stop();
+  }
+}
+
+/**
+ * Drives left and right side motors at fixed power value specified on the dashboard.
+ * 
+ * @param gain - Gain multiplier for front/back.
+ * @param rotGain - Gain multiplier for rotation.
+ */
+void DriveHuman::driveFixed(double gain, double rotGain) {
+  double leftPower = 0;
+  double rightPower = 0;
+  double throttle = -Robot::oi.readDriverAxis(kThrottleAxis);
+  double rotation = Robot::oi.readDriverAxis(kRotationAxis);
+  if (isFlipped) {
+    throttle = -throttle;
+  }
+
+  if (throttle > minDeflect) {
+    leftPower = fixedLeft;
+    rightPower = fixedRight;
+  } else if (throttle < -minDeflect) {
+    leftPower = -fixedLeft;
+    rightPower = -fixedRight;
+  } else {
+    // No forward/reverse throttle, check for rotation
+    gain = rotGain;
+    if (rotation > minDeflect) {
+      leftPower = fixedLeft;
+      rightPower = -fixedRight;
+    } else if (rotation < -minDeflect) {
+      leftPower = -fixedLeft;
+      rightPower = fixedRight;
+    }
+  }
+
+  // Apply determined power value
+  Robot::drive.setPower(leftPower * gain, rightPower * gain);
+}
+
+// Called once after isFinished returns true
+void DriveHuman::End() {
+  Robot::drive.stop();
+}
+
+// Called when another command which requires one or more of the same
+// subsystems is scheduled to run
+void DriveHuman::Interrupted() {
+  End();
+}
