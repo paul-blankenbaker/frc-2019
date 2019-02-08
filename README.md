@@ -70,9 +70,9 @@ These values can be very useful in verifying that your sensors are behaving corr
 
 ## Performance Measurements
 
-While working with path finding code in a Python environment, our team was consistently getting the watchdog warning indicating that our code was running too slow. By default the time and command based robot frame works run at 50 Hz giving your code 20 msecs of time to execute in. If your code takes longer than 20 msecs you will run into issues.
+While working with path finding code in a Python environment, our team was consistently getting the watchdog warning indicating that our code was running too slow. By default command based robots run at 50 Hz. This gives your code 20 msecs of time to execute. If your code takes longer than 20 msecs you will run into issues.
 
-Examination of the source code for each of the frameworks revealed that all three evironments have a LoopFunc() that is responsible for executing all of the active commands and verifying that they ran within the alloted time. This function was overloaded in the Python and Java implementations when measuring time. Unfortunately, the C++ framework did not permit overriding this function so its time is measure in the teleopPeriodic() method (this is an unfair advantage and C++ numbers will be skewed because of this).
+Examination of the source code for each of the frameworks revealed that all three evironments have a loopFunc() that is responsible for executing all of the active commands and verifying that they ran within the alloted time. This function was overloaded in the Python and Java implementations when measuring time. Unfortunately, the C++ framework did not permit overriding this function so its time is measured in the teleopPeriodic() method. This is an unfair advantage and C++ numbers will be skewed because of this.
 
 When you start the performance command on Shuffleboard, it will zero out any prior information and start reporting the time it takes for each pass through your code, the average time and the max time. These values are reported in milliseconds and you want these numbers to remain below 20 (or the value you set your robot to operate at).
 
@@ -82,8 +82,10 @@ If you get robotpy installed correctly and add the pygame pip module, you should
 
 ![Drive Settings](images/robotpy-sim.png)
 
-Truth be told, I have a hard time getting past my personal bias against using Python for real code. I tend to see many of Python's strengths as weaknesses. While it makes it easier for people new to programming to create software, it also makes it much easier for people new to programming to create bug ridden code likely to crash at unexpected times.
+Truth be told, I have a hard time getting past my personal bias against using Python for real code. I grew up in a Pascal, C++, PL/1, Java world and tend to prefer stricter languages. I see many of Python's strengths as weaknesses. I like type checking, immutables, scope control, braces and semi-colons. My opinion has been that Python makes it easier create software more quickly. Python also makes it easier to create run time bugs more quickly (little gifts of hidden joy).
 
-That being said, having this simulation environment at your fingertips makes it much easier for programming team members to track down problems without needing the robot. This would be the strongest argument for using Python instead of Java or C++.
+However, with a proper IDE set up many of these bugs will be flagged before deployment. 
+
+Even though Python would not be my first choice for developing a command based robot program. Having easy access to the robotpy simulation environment is awesome. This would be the strongest argument for using Python over Java or C++.
 
 While the Java and C++ environments do have a desktop simulation mode. They do not visually display the information or provide a mechanism to drive your robot in simulation mode.
