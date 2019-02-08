@@ -18,7 +18,7 @@ class Measure(wpilib.command.Command):
         self.yawLast = self.drive.getAngle()
         self.leftDistLast = self.left.getDistance()
         self.leftCntsLast = self.left.getCounts()
-        self.rightDistLast = self.left.getDistance()
+        self.rightDistLast = self.right.getDistance()
         self.rightCntsLast = self.right.getCounts()
 
     def execute(self):

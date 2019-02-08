@@ -11,8 +11,10 @@ from commands.drive.drivehuman import DriveHuman
 kTimeout : int = 0
 
 # Converts encoder counts to ticks
-kLeftConv = 5.75/12 * math.pi / 256 
-kRightConv = -5.75/12 * math.pi / 256
+kEncCntsPerRev = 256
+kWheelDiameter = 5.75
+kLeftConv = (kWheelDiameter / 12) * (math.pi / kEncCntsPerRev) 
+kRightConv = (kWheelDiameter / 12) * (math.pi / kEncCntsPerRev)
 
 class Tread():
     """ Helper class that provides common operations for one side of drive train. """
