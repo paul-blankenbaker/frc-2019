@@ -1,10 +1,3 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
-
 package frc.robot;
 
 import edu.wpi.first.hal.sim.DriverStationSim;
@@ -12,9 +5,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.commands.drive.DriveHuman;
 import frc.robot.commands.Performance;
 import frc.robot.subsystems.DriveSubsystem;
 
@@ -27,15 +19,18 @@ import frc.robot.subsystems.DriveSubsystem;
  */
 public class Robot extends TimedRobot {
   public static final boolean debug = true;
-  public static final DriveSubsystem drive = new DriveSubsystem();
-  public static OI oi;
 
-  Command m_autonomousCommand;
-  SendableChooser<Command> m_chooser = new SendableChooser<>();
+  // Subsystem singletons
+  public static final DriveSubsystem drive = new DriveSubsystem();
+
+  // Operator Interface singleton
+  public static OI oi;
+  private Command autonCommand;
 
   // Used to check interation times when debug is enabled
   private Performance performance;
   private DriverStationSim dsSim;
+  private Timer dsTimer;
 
   /**
    * This function is run when the robot is first started up and should be used
@@ -43,17 +38,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    // It is expected/required that ALL subsystems are constructed/initialized first!
+    // It is expected/required that ALL subsystems are constructed/initialized
+    // first!
     oi = new OI();
-    m_chooser.setDefaultOption("Default Auto", new DriveHuman());
-    // chooser.addOption("My Auto", new MyAutoCommand());
-    SmartDashboard.putData("Auto mode", m_chooser);
 
     if (debug) {
       performance = new Performance();
       SmartDashboard.putData("Measure Performance", performance);
       if (isSimulation()) {
         dsSim = new DriverStationSim();
+        dsSim.setAutonomous(true);
+        dsTimer = new Timer();
+        dsTimer.start();
       }
     }
   }
@@ -83,11 +79,37 @@ public class Robot extends TimedRobot {
    * This runs after the mode specific periodic functions, but before LiveWindow
    * and SmartDashboard integrated updating.
    */
-  /*
-   * @Override public void robotPeriodic() {
-   * 
-   * }
-   */
+  @Override
+  public void robotPeriodic() {
+    if (dsSim != null) {
+      double dur = dsTimer.get();
+      SmartDashboard.putNumber("Game Time", dur);
+      if (dsSim.getEnabled()) {
+        if (dsSim.getAutonomous()) {
+          if (dur >= 15.0) {
+            dsSim.setAutonomous(false);
+            dsSim.setEnabled(false);
+            dsTimer.reset();
+            SmartDashboard.putString("Game Mode", "Disabled");
+          }
+        } else {
+          if (dur >= 30.0) {
+            dsSim.setAutonomous(true);
+            dsSim.setEnabled(false);
+            dsTimer.reset();
+            SmartDashboard.putString("Game Mode", "Disabled");
+          }
+        }
+      } else {
+        if (dur >= 2.0) {
+          dsSim.setEnabled(true);
+          dsTimer.reset();
+          SmartDashboard.putString("Game Mode", dsSim.getAutonomous() ? "Auton" : "Teleop");
+        }
+      }
+      dsSim.notifyNewData();
+    }
+  }
 
   /**
    * This function is called once each time the robot enters Disabled mode. You
@@ -96,17 +118,20 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void disabledInit() {
-    if (dsSim != null) {
-      if (!dsSim.getEnabled()) {
-        dsSim.setEnabled(true);
+    // Cancel current commands running on subsystems (will force them back to default)
+    Subsystem[] list = { drive };
+    for (Subsystem s : list) {
+      Command active = s.getCurrentCommand();
+      if (active != null) {
+        active.cancel();
       }
-      dsSim.notifyNewData();
     }
   }
 
-  /*
-   * @Override public void disabledPeriodic() { Scheduler.getInstance().run(); }
-   */
+  @Override
+  public void disabledPeriodic() {
+    Scheduler.getInstance().run();
+  }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select
@@ -122,19 +147,8 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    m_autonomousCommand = m_chooser.getSelected();
-
-    /*
-     * String autoSelected = SmartDashboard.getString("Auto Selector", "Default");
-     * switch(autoSelected) { case "My Auto": autonomousCommand = new
-     * MyAutoCommand(); break; case "Default Auto": default: autonomousCommand = new
-     * ExampleCommand(); break; }
-     */
-
-    // schedule the autonomous command (example)
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.start();
-    }
+    autonCommand = oi.getSelectedAuton();
+    autonCommand.start();
   }
 
   /**
@@ -151,8 +165,8 @@ public class Robot extends TimedRobot {
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
     // this line or comment it out.
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
+    if (autonCommand != null) {
+      autonCommand.cancel();
     }
   }
 
@@ -167,7 +181,7 @@ public class Robot extends TimedRobot {
   /**
    * This function is called periodically during test mode.
    */
-  @Override
-  public void testPeriodic() {
-  }
+  // @Override
+  // public void testPeriodic() {
+  // }
 }

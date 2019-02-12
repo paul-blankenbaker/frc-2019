@@ -24,11 +24,11 @@ public class DriveMeasure extends Command {
   public DriveMeasure() {
     super("Measure");
     // IMPORTANT. Since we are only reading data and not manipulting mechanisms, we
-    // do not need
-    // to require the drive subsystem
+    // do not need to require the drive subsystem
     drive = Robot.drive;
     left = drive.getLeft();
     right = drive.getRight();
+    // This will allow us to continue measuring while disabled
     setRunWhenDisabled(true);
   }
 
@@ -40,6 +40,7 @@ public class DriveMeasure extends Command {
   @Override
   protected void initialize() {
     yawLast = drive.getAngle();
+
     leftDistLast = left.getDistance();
     leftCntsLast = left.getCounts();
     rightDistLast = left.getDistance();
@@ -51,6 +52,7 @@ public class DriveMeasure extends Command {
   protected void execute() {
     double yawRaw = drive.getAngle();
     double yaw = yawRaw - yawLast;
+
     double leftDist = left.getDistance() - leftDistLast;
     int leftCnts = left.getCounts() - leftCntsLast;
     double leftVel = left.getVelocity();

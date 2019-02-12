@@ -1,25 +1,33 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
-
 package frc.robot.commands.drive;
 
-import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.OI;
 import frc.robot.Robot;
 
 /**
  * An example command. You can replace me with your own command.
  */
 public class DriveHuman extends Command {
+  // Global indicating if front/back of robot were flipped by driver
   private static boolean isFlipped = false;
+  // Global indicating whether brake mode should be enabled
   private static boolean brakeMode = false;
 
+  // Labels for SmartDashboard controls
+  public static final String quickTurnLabel = "Quick Turn";
+  public static final String squaredInputsLabel = "Square Inputs";
+  public static final String fixedLeftLabel = "Fixed Left";
+  public static final String fixedRightLabel = "Fixed Right";
+  public static final String rotationGainLabel = "Rotation Gain";
+  public static final String slowGainLabel = "Slow Gain";
+  public static final String flippedFrontLabel = "Flipped Front";
+  public static final String brakeModeLabel = "Brake Mode";
+  public static final String driveModeLabel = "Drive Mode";
+
+  // Used to select drive mode
   private static SendableChooser<Integer> modeChooser = null;
 
   // Drive mode choices
@@ -28,6 +36,7 @@ public class DriveHuman extends Command {
   private static final int kModeCurvature = 2;
   private static final int kModeFixed = 3;
 
+  // Should probably be relocated to OI
   private static final int kThrottleAxis = 1;
   private static final int kRotationAxis = 4;
   private static final int kLeftAxis = 1;
@@ -48,19 +57,18 @@ public class DriveHuman extends Command {
   private double slowGain;
 
   private double minDeflect;
-
-  private JoystickButton flipButton;
-
+  private DifferentialDrive drive;
   /**
    * Trivial command to allow user to control what end of the robot is the front.
    */
   private static final class FlipFront extends Command {
     FlipFront() {
+      super("FlipFront");
       updateDashboard();
     }
 
     private void updateDashboard() {
-      SmartDashboard.putBoolean("Flipped Front", isFlipped);
+      SmartDashboard.putBoolean(flippedFrontLabel, isFlipped);
     }
 
     @Override
@@ -77,15 +85,17 @@ public class DriveHuman extends Command {
   }
 
   /**
-   * Trivial helper command to allow user to control whether brake mode is enabled or not.
+   * Trivial helper command to allow user to control whether brake mode is enabled
+   * or not.
    */
   private static final class BrakeModeToggle extends Command {
     BrakeModeToggle() {
+      super("BrakeModeToggle");
       updateDashboard();
     }
 
     private void updateDashboard() {
-      SmartDashboard.putBoolean("Brake Mode", brakeMode);
+      SmartDashboard.putBoolean(brakeModeLabel, brakeMode);
     }
 
     @Override
@@ -101,7 +111,6 @@ public class DriveHuman extends Command {
     }
   }
 
-
   /**
    * Initialize all of the control options and control option UI.
    */
@@ -115,28 +124,36 @@ public class DriveHuman extends Command {
     rotationGain = 0.5;
     slowGain = 0.5;
     minDeflect = 1 / 64.0;
+  }
 
+  public static Command createFlipFrontCommand() {
+    return new FlipFront();
+  }
+
+  public static Command createBrakeModeToggleCommand() {
+    return new BrakeModeToggle();
+  }
+
+  /**
+   * Helper method that OI can use during setup to enable dashboard driver control settings.
+   */
+  public static void setupDashboardControls() {
     // Only need to set up dashbard drive controls once
     if (modeChooser == null) {
-      SmartDashboard.putBoolean("Quick Turn", quickTurn);
-      SmartDashboard.putBoolean("Square Inputs", squareInputs);
-      SmartDashboard.putNumber("Fixed Left", fixedLeft);
-      SmartDashboard.putNumber("Fixed Right", fixedRight);
-      SmartDashboard.putNumber("Rotation Gain", rotationGain);
-      SmartDashboard.putNumber("Slow Gain", slowGain);
+      OI.initializeBoolean(quickTurnLabel, true);
+      OI.initializeBoolean(squaredInputsLabel, true);
+      OI.initializeNumber(fixedLeftLabel, 0.4);
+      OI.initializeNumber(fixedRightLabel, 0.4);
+      OI.initializeNumber(rotationGainLabel, 0.5);
+      OI.initializeNumber(slowGainLabel, 0.5);
 
       SendableChooser<Integer> mc = new SendableChooser<>();
       mc.setDefaultOption("Arcade", kModeArcade);
       mc.addOption("Tank", kModeTank);
       mc.addOption("Curvature", kModeCurvature);
       mc.addOption("Fixed", kModeFixed);
-      SmartDashboard.putData("Drive Mode", mc);
+      SmartDashboard.putData(driveModeLabel, mc);
       modeChooser = mc;
-
-      SmartDashboard.putData("Brake Control", new BrakeModeToggle());
-      SmartDashboard.putData("Flip Front", new FlipFront());
-      flipButton = Robot.oi.createDriverButton(5);
-      flipButton.whenPressed(new FlipFront());
     }
   }
 
@@ -145,14 +162,20 @@ public class DriveHuman extends Command {
    */
   @Override
   public void initialize() {
+    if (drive == null) {
+      drive = Robot.drive.getDifferentialDrive();
+    }
     Robot.drive.setBrakeMode(brakeMode);
     mode = ((Number) modeChooser.getSelected()).intValue();
-    quickTurn = SmartDashboard.getBoolean("Quick Turn", quickTurn);
-    squareInputs = SmartDashboard.getBoolean("Square Inputs", squareInputs);
-    fixedLeft = SmartDashboard.getNumber("Fixed Left", fixedLeft);
-    fixedRight = SmartDashboard.getNumber("Fixed Right", fixedRight);
-    rotationGain = SmartDashboard.getNumber("Rotation Gain", rotationGain);
-    slowGain = SmartDashboard.getNumber("Slow Gain", slowGain);
+    if (drive == null) {
+      mode = kModeFixed;
+    }
+    quickTurn = SmartDashboard.getBoolean(quickTurnLabel, quickTurn);
+    squareInputs = SmartDashboard.getBoolean(squaredInputsLabel, squareInputs);
+    fixedLeft = SmartDashboard.getNumber(fixedLeftLabel, fixedLeft);
+    fixedRight = SmartDashboard.getNumber(fixedRightLabel, fixedRight);
+    rotationGain = SmartDashboard.getNumber(rotationGainLabel, rotationGain);
+    slowGain = SmartDashboard.getNumber(slowGainLabel, slowGain);
   }
 
   @Override
@@ -182,7 +205,7 @@ public class DriveHuman extends Command {
       if (isFlipped) {
         throttle = -throttle;
       }
-      Robot.drive.arcadeDrive(throttle, rotation, squareInputs);
+      drive.arcadeDrive(throttle, rotation, squareInputs);
       break;
     }
 
@@ -194,7 +217,7 @@ public class DriveHuman extends Command {
         left = -right;
         right = tmpLeft;
       }
-      Robot.drive.tankDrive(left, right, squareInputs);
+      drive.tankDrive(left, right, squareInputs);
       break;
     }
 
@@ -204,7 +227,7 @@ public class DriveHuman extends Command {
       if (isFlipped) {
         throttle = -throttle;
       }
-      Robot.drive.curvatureDrive(throttle, rotation, quickTurn);
+      drive.curvatureDrive(throttle, rotation, quickTurn);
       break;
     }
 
@@ -219,39 +242,41 @@ public class DriveHuman extends Command {
   }
 
   /**
-       * Drives left and right side motors at fixed power value specified on the dashboard.
-       * @param gain - Gain multiplier for front/back.
-       * @param rotGain - Gain multiplier for rotation.
-       */
+   * Drives left and right side motors at fixed power value specified on the
+   * dashboard.
+   * 
+   * @param gain    - Gain multiplier for front/back.
+   * @param rotGain - Gain multiplier for rotation.
+   */
   private void driveFixed(double gain, double rotGain) {
     double leftPower = 0;
     double rightPower = 0;
     double throttle = -Robot.oi.readDriverAxis(kThrottleAxis);
     double rotation = Robot.oi.readDriverAxis(kRotationAxis);
-      if (isFlipped) {
-          throttle = -throttle;
-      }
+    if (isFlipped) {
+      throttle = -throttle;
+    }
 
-      if (throttle > minDeflect) {
-          leftPower = fixedLeft;
-          rightPower = fixedRight;
-      } else if (throttle < -minDeflect) {
-          leftPower = -fixedLeft;
-          rightPower = -fixedRight;
-      }  else {
-          // No forward/reverse throttle, check for rotation
-          gain = rotGain;
-          if (rotation > minDeflect) {
-              leftPower = fixedLeft;
-              rightPower = -fixedRight;
-          } else if (rotation < -minDeflect) {
-              leftPower = -fixedLeft;
-              rightPower = fixedRight;
-          }
+    if (throttle > minDeflect) {
+      leftPower = fixedLeft;
+      rightPower = fixedRight;
+    } else if (throttle < -minDeflect) {
+      leftPower = -fixedLeft;
+      rightPower = -fixedRight;
+    } else {
+      // No forward/reverse throttle, check for rotation
+      gain = rotGain;
+      if (rotation > minDeflect) {
+        leftPower = fixedLeft;
+        rightPower = -fixedRight;
+      } else if (rotation < -minDeflect) {
+        leftPower = -fixedLeft;
+        rightPower = fixedRight;
       }
-      
-      // Apply determined power value
-      Robot.drive.setPower(leftPower * gain, rightPower * gain);
+    }
+
+    // Apply determined power value
+    Robot.drive.setPower(leftPower * gain, rightPower * gain);
   }
 
   // Called once after isFinished returns true

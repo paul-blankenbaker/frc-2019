@@ -20,6 +20,12 @@ import com.kauailabs.navx.frc.AHRS;;
 public final class DriveSubsystem extends Subsystem {
     private static final boolean debug = true;
 
+    // Set following to false if hardware is missing
+    public static final boolean motorsEnabled = true;
+    public static final boolean encodersEnabled = true;
+    public static final boolean navxEnabled = true;
+    public static final boolean accelEnabled = true;
+
     public static final int kTimeout = 0;
 
     // Used for applying real-world corrections to encoder.
@@ -56,7 +62,9 @@ public final class DriveSubsystem extends Subsystem {
         private WPI_VictorSPX[] followers;
 
         public void setPower(double power) {
-            motor.set(power);
+            if (motorsEnabled) {
+                motor.set(power);
+            }
         }
 
         public double getDistance() {
@@ -79,6 +87,9 @@ public final class DriveSubsystem extends Subsystem {
          * @return Initialized motor controller.
          */
         private static WPI_TalonSRX createTalonSRX(int canId, boolean invert) {
+            if (!motorsEnabled) {
+                return null;
+            }
             WPI_TalonSRX s = new WPI_TalonSRX(canId);
             s.configFactoryDefault(kTimeout);
             s.clearStickyFaults(kTimeout);
@@ -101,6 +112,9 @@ public final class DriveSubsystem extends Subsystem {
          * @return Initialized motor controller.
          */
         private static WPI_VictorSPX createVictorSPX(WPI_TalonSRX leader, int canId, boolean invert) {
+            if (!motorsEnabled) {
+                return null;
+            }
             WPI_VictorSPX s = new WPI_VictorSPX(canId);
             s.configFactoryDefault(kTimeout);
             s.clearStickyFaults(kTimeout);
@@ -128,24 +142,30 @@ public final class DriveSubsystem extends Subsystem {
             setVoltageCompensation(12); // Map [-1.0, +1.0] power values to [-12.0, +12.0] volts by default
             setBrakeMode(false);
 
-            encoder = new Encoder(chA, chB);
-            encoder.setName("Drive", tname + "Enc");
-            encoder.setDistancePerPulse(cntsToFt);
-            encoder.setSamplesToAverage(10);
-            readSensors();
+            if (encodersEnabled) {
+                encoder = new Encoder(chA, chB);
+                encoder.setName("Drive", tname + "Enc");
+                encoder.setDistancePerPulse(cntsToFt);
+                encoder.setSamplesToAverage(10);
+                readSensors();
+            } else {
+                encoder = null;
+            }
         }
 
         private void readSensors() {
-            encCnts = encoder.get();
-            encDist = encoder.getDistance();
-            encVel = encoder.getRate();
+            if (encodersEnabled) {
+                encCnts = encoder.get();
+                encDist = encoder.getDistance();
+                encVel = encoder.getRate();
+            }
         }
 
         private void dashboardPeriodic() {
             if (debug) {
-                SmartDashboard.putNumber(name + " Enc Distance", encoder.getDistance());
-                SmartDashboard.putNumber(name + " Enc Counts", encoder.get());
-                SmartDashboard.putNumber(name + " Enc Velocity", encoder.getRate());
+                SmartDashboard.putNumber(name + " Enc Distance", getDistance());
+                SmartDashboard.putNumber(name + " Enc Counts", getCounts());
+                SmartDashboard.putNumber(name + " Enc Velocity", getVelocity());
             }
         }
 
@@ -161,9 +181,11 @@ public final class DriveSubsystem extends Subsystem {
          *                level (typically 12.0 or less).
          */
         private void setVoltageCompensation(double voltage) {
-            motor.configVoltageCompSaturation(voltage, kTimeout);
-            motor.enableVoltageCompensation(true);
-            // NOT sure, but I don't think we need to apply this configuration to followers
+            if (motorsEnabled) {
+                motor.configVoltageCompSaturation(voltage, kTimeout);
+                motor.enableVoltageCompensation(true);
+                // NOT sure, but I don't think we need to apply this configuration to followers
+            }
         }
 
         /**
@@ -173,6 +195,9 @@ public final class DriveSubsystem extends Subsystem {
          * @param enable Pass true to enable brake mode, false to enable coast mode.
          */
         private void setBrakeMode(boolean enable) {
+            if (!motorsEnabled) {
+                return;
+            }
             NeutralMode mode = enable ? NeutralMode.Brake : NeutralMode.Coast;
             motor.setNeutralMode(mode);
             for (WPI_VictorSPX f : followers) {
@@ -183,42 +208,46 @@ public final class DriveSubsystem extends Subsystem {
 
     }
 
+    // Sensors and acuators set up in constructor
     private final AHRS navx;
-
     private final BuiltInAccelerometer accel;
-
     private final Tread left;
-
     private final Tread right;
-
     private final DifferentialDrive drive;
 
+    // Sensor readings updated by periodic method
     private float yaw;
-
     private double accelX;
-
     private double accelY;
-
     private double accelZ;
 
     public DriveSubsystem() {
         super("Drive");
-
-        navx = new AHRS(edu.wpi.first.wpilibj.SPI.Port.kMXP);
-        navx.setName("Drive", "NavX");
-        accel = new BuiltInAccelerometer();
-        accel.setName("Drive", "Accel");
+        if (navxEnabled) {
+            navx = new AHRS(edu.wpi.first.wpilibj.SPI.Port.kMXP);
+            navx.setName("Drive", "NavX");
+        } else {
+            navx = null;
+        }
+        if (accelEnabled) {
+            accel = new BuiltInAccelerometer();
+            accel.setName("Drive", "Accel");
+        } else {
+            accel = null;
+        }
         left = new Tread("Left", RobotMap.kCanDriveLeft0, RobotMap.kCanDriveLeft1, RobotMap.kCanDriveLeft2, true,
                 RobotMap.kDioDriveLeftEncA, RobotMap.kDioDriveLeftEncB, kLeftConv);
         right = new Tread("Right", RobotMap.kCanDriveRight0, RobotMap.kCanDriveRight1, RobotMap.kCanDriveRight2, false,
                 RobotMap.kDioDriveRightEncA, RobotMap.kDioDriveRightEncB, kRightConv);
 
-        drive = new DifferentialDrive(left.motor, right.motor);
-        drive.setName("Drive", "Differential");
-        drive.setSafetyEnabled(false);
-        drive.setDeadband(0.025);
-        drive.setRightSideInverted(false);
-        periodic();
+        if (motorsEnabled) {
+            drive = new DifferentialDrive(left.motor, right.motor);
+            drive.setSafetyEnabled(false);
+            drive.setDeadband(0.025);
+            drive.setRightSideInverted(false);
+        }
+
+        readSensors();
     }
 
     /**
@@ -272,17 +301,20 @@ public final class DriveSubsystem extends Subsystem {
         right.setPower(rightPower);
     }
 
-    public void arcadeDrive(double throttle, double rotation, boolean squareInputs) {
-        drive.arcadeDrive(throttle, rotation, squareInputs);
-    }
+    // public void arcadeDrive(double throttle, double rotation, boolean
+    // squareInputs) {
+    // drive.arcadeDrive(throttle, rotation, squareInputs);
+    // }
 
-    public void curvatureDrive(double throttle, double rotation, boolean quickTurn) {
-        drive.curvatureDrive(throttle, rotation, quickTurn);
-    }
+    // public void curvatureDrive(double throttle, double rotation, boolean
+    // quickTurn) {
+    // drive.curvatureDrive(throttle, rotation, quickTurn);
+    // }
 
-    public void tankDrive(double leftPower, double rightPower, boolean squareInputs) {
-        drive.tankDrive(leftPower, rightPower, squareInputs);
-    }
+    // public void tankDrive(double leftPower, double rightPower, boolean
+    // squareInputs) {
+    // drive.tankDrive(leftPower, rightPower, squareInputs);
+    // }
 
     @Override
     public void periodic() {
@@ -293,10 +325,14 @@ public final class DriveSubsystem extends Subsystem {
     private void readSensors() {
         left.readSensors();
         right.readSensors();
-        yaw = navx.getYaw();
-        accelX = accel.getX();
-        accelY = accel.getY();
-        accelZ = accel.getZ();
+        if (navxEnabled) {
+            yaw = navx.getYaw();
+        }
+        if (accelEnabled) {
+            accelX = accel.getX();
+            accelY = accel.getY();
+            accelZ = accel.getZ();
+        }
     }
 
     /**
@@ -366,6 +402,10 @@ public final class DriveSubsystem extends Subsystem {
         boolean xBump = Math.abs(getAccelX()) > bumpX;
         boolean yBump = Math.abs(getAccelY()) > bumpY;
         return (xBump || yBump);
+    }
+
+    public DifferentialDrive getDifferentialDrive() {
+        return drive;
     }
 
     @Override
