@@ -196,14 +196,17 @@ class Drive(Subsystem):
         self.left.setPower(left)
         self.right.setPower(right)
 
-    def arcadeDrive(self, throttle : float, rotation : float, squareInputs : bool = True):
-        self.drive.arcadeDrive(throttle, rotation, squareInputs)
+    def getDifferentialDrive(self) -> DifferentialDrive:
+        return self.drive
 
-    def curvatureDrive(self, throttle : float, rotation : float, isQuickTurn : bool = False):
-        self.drive.curvatureDrive(throttle, rotation, isQuickTurn)
+    # def arcadeDrive(self, throttle : float, rotation : float, squareInputs : bool = True):
+    #     self.drive.arcadeDrive(throttle, rotation, squareInputs)
 
-    def tankDrive(self, leftPower : float, rightPower : float, squareInputs : bool = True):
-        self.drive.tankDrive(leftPower, rightPower, squareInputs)
+    # def curvatureDrive(self, throttle : float, rotation : float, isQuickTurn : bool = False):
+    #     self.drive.curvatureDrive(throttle, rotation, isQuickTurn)
+
+    # def tankDrive(self, leftPower : float, rightPower : float, squareInputs : bool = True):
+    #     self.drive.tankDrive(leftPower, rightPower, squareInputs)
 
     def periodic(self):
         self.__readSensors__()
