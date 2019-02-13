@@ -10,6 +10,7 @@ import subsystems
 from commands.drive.measure import Measure
 from commands.drive.drivehuman import DriveHuman
 from commands.drive.driveticktimed import DriveTickTimed
+from commands.loadtest import LoadTest
 
 class OI():
     debug: bool = True
@@ -73,6 +74,7 @@ class OI():
 
         # Debug tools (if enabled)
         if self.debug:
+            SmartDashboard.putData("CPU Load Test", LoadTest())
             SmartDashboard.putData("Drive Subsystem", subsystems.drive)
             dd = subsystems.drive.getDifferentialDrive()
             if dd != None:

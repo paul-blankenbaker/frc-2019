@@ -80,27 +80,30 @@ DriveHuman::DriveHuman() : Command("HumanDrive", Robot::drive),
                            rotationGain(0.5),
                            slowGain(0.5),
                            minDeflect(1 / 64.0) {
+
+                             // TODO
+                             modeChooser = 0;
   // Only need to set up dashbard drive controls once
-  if (modeChooser == 0) {
-    SmartDashboard::PutBoolean("Quick Turn", quickTurn);
-    SmartDashboard::PutBoolean("Square Inputs", squareInputs);
-    SmartDashboard::PutNumber("Fixed Left", fixedLeft);
-    SmartDashboard::PutNumber("Fixed Right", fixedRight);
-    SmartDashboard::PutNumber("Rotation Gain", rotationGain);
-    SmartDashboard::PutNumber("Slow Gain", slowGain);
+  // if (modeChooser == 0) {
+  //   SmartDashboard::PutBoolean("Quick Turn", quickTurn);
+  //   SmartDashboard::PutBoolean("Square Inputs", squareInputs);
+  //   SmartDashboard::PutNumber("Fixed Left", fixedLeft);
+  //   SmartDashboard::PutNumber("Fixed Right", fixedRight);
+  //   SmartDashboard::PutNumber("Rotation Gain", rotationGain);
+  //   SmartDashboard::PutNumber("Slow Gain", slowGain);
 
-    modeChooser = new SendableChooser<int>();
-    modeChooser->SetDefaultOption("Arcade", kModeArcade);
-    modeChooser->AddOption("Tank", kModeTank);
-    modeChooser->AddOption("Curvature", kModeCurvature);
-    modeChooser->AddOption("Fixed", kModeFixed);
-    SmartDashboard::PutData("Drive Mode", modeChooser);
+  //   modeChooser = new SendableChooser<int>();
+  //   modeChooser->SetDefaultOption("Arcade", kModeArcade);
+  //   modeChooser->AddOption("Tank", kModeTank);
+  //   modeChooser->AddOption("Curvature", kModeCurvature);
+  //   modeChooser->AddOption("Fixed", kModeFixed);
+  //   SmartDashboard::PutData("Drive Mode", modeChooser);
 
-    SmartDashboard::PutData("Brake Control", new BrakeModeToggle());
-    SmartDashboard::PutData("Flip Front", new FlipFront());
-    JoystickButton flipButton(Robot::oi.getDriverJoystick(), 5);
-    flipButton.WhenPressed(new FlipFront());
-  }
+  //   SmartDashboard::PutData("Brake Control", new BrakeModeToggle());
+  //   SmartDashboard::PutData("Flip Front", new FlipFront());
+  //   JoystickButton flipButton(Robot::oi.getDriverJoystick(), 5);
+  //   flipButton.WhenPressed(new FlipFront());
+  // }
 }
 
 /**
@@ -108,7 +111,9 @@ DriveHuman::DriveHuman() : Command("HumanDrive", Robot::drive),
  */
 void DriveHuman::Initialize() {
   Robot::drive.setBrakeMode(brakeMode);
-  mode = modeChooser->GetSelected();
+  if (modeChooser != 0) {
+    mode = modeChooser->GetSelected();
+  }
   quickTurn = SmartDashboard::GetBoolean("Quick Turn", quickTurn);
   squareInputs = SmartDashboard::GetBoolean("Square Inputs", squareInputs);
   fixedLeft = SmartDashboard::GetNumber("Fixed Left", fixedLeft);
