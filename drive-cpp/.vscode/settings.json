@@ -10,5 +10,8 @@
     "bin/": true,
     ".classpath": true,
     ".project": true
+  },
+  "files.associations": {
+    "*.inc": "cpp"
   }
 }

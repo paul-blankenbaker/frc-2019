@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * Simple helper class to track basic statisics (min, max, avg, cnt).
  */

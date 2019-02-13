@@ -207,17 +207,17 @@ class DriveSubsystem : public frc::Subsystem {
     right.setPower(rightPower);
   }
 
-  void arcadeDrive(double throttle, double rotation, bool squareInputs) {
-    drive->ArcadeDrive(throttle, rotation, squareInputs);
-  }
+  // void arcadeDrive(double throttle, double rotation, bool squareInputs) {
+  //   drive->ArcadeDrive(throttle, rotation, squareInputs);
+  // }
 
-  void curvatureDrive(double throttle, double rotation, bool quickTurn) {
-    drive->CurvatureDrive(throttle, rotation, quickTurn);
-  }
+  // void curvatureDrive(double throttle, double rotation, bool quickTurn) {
+  //   drive->CurvatureDrive(throttle, rotation, quickTurn);
+  // }
 
-  void tankDrive(double leftPower, double rightPower, bool squareInputs) {
-    drive->TankDrive(leftPower, rightPower, squareInputs);
-  }
+  // void tankDrive(double leftPower, double rightPower, bool squareInputs) {
+  //   drive->TankDrive(leftPower, rightPower, squareInputs);
+  // }
 
   void periodic();
 
@@ -267,6 +267,10 @@ class DriveSubsystem : public frc::Subsystem {
 
   void stop() {
     setPower(0, 0);
+  }
+
+  DifferentialDrive& getDifferentialDrive() {
+    return *drive;
   }
 
   /**

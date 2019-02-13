@@ -80,30 +80,37 @@ DriveHuman::DriveHuman() : Command("HumanDrive", Robot::drive),
                            rotationGain(0.5),
                            slowGain(0.5),
                            minDeflect(1 / 64.0) {
+}
 
-                             // TODO
-                             modeChooser = 0;
+Command* DriveHuman::createFlipFrontCommand() {
+  return new FlipFront();
+}
+
+Command* DriveHuman::createBrakeModeToggleCommand() {
+  return new BrakeModeToggle();
+}
+
+/**
+   * Helper method that OI can use during setup to enable dashboard driver control settings.
+   */
+void DriveHuman::setupDashboardControls() {
   // Only need to set up dashbard drive controls once
-  // if (modeChooser == 0) {
-  //   SmartDashboard::PutBoolean("Quick Turn", quickTurn);
-  //   SmartDashboard::PutBoolean("Square Inputs", squareInputs);
-  //   SmartDashboard::PutNumber("Fixed Left", fixedLeft);
-  //   SmartDashboard::PutNumber("Fixed Right", fixedRight);
-  //   SmartDashboard::PutNumber("Rotation Gain", rotationGain);
-  //   SmartDashboard::PutNumber("Slow Gain", slowGain);
+  if (modeChooser == 0) {
+    OI::initializeBoolean(quickTurnLabel, true);
+    OI::initializeBoolean(squaredInputsLabel, true);
+    OI::initializeNumber(fixedLeftLabel, 0.4);
+    OI::initializeNumber(fixedRightLabel, 0.4);
+    OI::initializeNumber(rotationGainLabel, 0.5);
+    OI::initializeNumber(slowGainLabel, 0.5);
 
-  //   modeChooser = new SendableChooser<int>();
-  //   modeChooser->SetDefaultOption("Arcade", kModeArcade);
-  //   modeChooser->AddOption("Tank", kModeTank);
-  //   modeChooser->AddOption("Curvature", kModeCurvature);
-  //   modeChooser->AddOption("Fixed", kModeFixed);
-  //   SmartDashboard::PutData("Drive Mode", modeChooser);
-
-  //   SmartDashboard::PutData("Brake Control", new BrakeModeToggle());
-  //   SmartDashboard::PutData("Flip Front", new FlipFront());
-  //   JoystickButton flipButton(Robot::oi.getDriverJoystick(), 5);
-  //   flipButton.WhenPressed(new FlipFront());
-  // }
+    SendableChooser<int>* mc = new SendableChooser<int>();
+    mc->SetDefaultOption("Arcade", kModeArcade);
+    mc->AddOption("Tank", kModeTank);
+    mc->AddOption("Curvature", kModeCurvature);
+    mc->AddOption("Fixed", kModeFixed);
+    SmartDashboard::PutData(driveModeLabel, mc);
+    modeChooser = mc;
+  }
 }
 
 /**
@@ -146,7 +153,8 @@ void DriveHuman::Execute() {
       if (isFlipped) {
         throttle = -throttle;
       }
-      Robot::drive.arcadeDrive(throttle, rotation, squareInputs);
+      DifferentialDrive& drive = Robot::drive.getDifferentialDrive();
+      drive.ArcadeDrive(throttle, rotation, squareInputs);
       break;
     }
 
@@ -158,7 +166,8 @@ void DriveHuman::Execute() {
         left = -right;
         right = tmpLeft;
       }
-      Robot::drive.tankDrive(left, right, squareInputs);
+      DifferentialDrive& drive = Robot::drive.getDifferentialDrive();
+      drive.TankDrive(left, right, squareInputs);
       break;
     }
 
@@ -168,7 +177,8 @@ void DriveHuman::Execute() {
       if (isFlipped) {
         throttle = -throttle;
       }
-      Robot::drive.curvatureDrive(throttle, rotation, quickTurn);
+      DifferentialDrive& drive = Robot::drive.getDifferentialDrive();
+      drive.CurvatureDrive(throttle, rotation, quickTurn);
       break;
     }
 

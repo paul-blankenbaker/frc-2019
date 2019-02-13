@@ -34,13 +34,31 @@ class DriveHuman : public frc::Command {
 
   double minDeflect;
 
-  // JoystickButton flipButton;
-
  public:
+  // Labels for SmartDashboard controls
+  static constexpr const char* quickTurnLabel = "Quick Turn";
+  static constexpr const char* squaredInputsLabel = "Square Inputs";
+  static constexpr const char* fixedLeftLabel = "Fixed Left";
+  static constexpr const char* fixedRightLabel = "Fixed Right";
+  static constexpr const char* rotationGainLabel = "Rotation Gain";
+  static constexpr const char* slowGainLabel = "Slow Gain";
+  static constexpr const char* flippedFrontLabel = "Flipped Front";
+  static constexpr const char* brakeModeLabel = "Brake Mode";
+  static constexpr const char* driveModeLabel = "Drive Mode"; 
+
   /**
    * Initialize all of the control options and control option UI.
    */
   DriveHuman();
+
+  static frc::Command* createFlipFrontCommand();
+
+  static frc::Command* createBrakeModeToggleCommand();
+
+  /**
+   * Helper method that OI can use during setup to enable dashboard driver control settings.
+   */
+  static void setupDashboardControls();
 
  protected:
   /**
