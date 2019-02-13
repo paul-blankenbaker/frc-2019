@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.command.WaitCommand;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.commands.LoadTest;
 import frc.robot.commands.drive.DriveHuman;
 import frc.robot.commands.drive.DriveMeasure;
 import frc.robot.commands.drive.DriveTickTimed;
@@ -85,6 +86,7 @@ public class OI {
 
     // Debug tools (if enabled)
     if (debug) {
+      SmartDashboard.putData("CPU Load Test", new LoadTest());
       SmartDashboard.putData("Drive Subsystem", Robot.drive);
       DifferentialDrive dd = Robot.drive.getDifferentialDrive();
       if (dd != null) {
