@@ -40,23 +40,26 @@ public class DriveTickTimed extends Command {
   // Maximum power to apply to left and right side
   private double rightPower;
   private double leftPower;
-
+ 
   /**
-   * Initialize all of the control options and control option UI.
+   * Initialize object with multipliers for left/right side of drive train.
+   * 
+   * @param leftGain - Power multiplier/inverter for left side (typically 1.0 or -1.0).
+   * @param rightGain - Power multiplier/inverter for right side (typically 1.0 or -1.0).
    */
   public DriveTickTimed(double leftGain, double rightGain) {
     super("DriveTickTimed", Robot.drive);
     this.leftGain = leftGain;
     this.rightGain = rightGain;
-    this.leftPower = this.rightPower = kDefaultPower;
-    this.mode = Mode.done;
-    this.rampTicks = 20;
-    this.cruiseTicks = 40;
+    leftPower = rightPower = kDefaultPower;
+    mode = Mode.done;
+    rampTicks = 20;
+    cruiseTicks = 40;
 
-    this.leftPower = OI.initializeNumber(fixedLeftLabel, this.leftPower);
-    this.rightPower = OI.initializeNumber(fixedRightLabel, this.rightPower);
-    this.rampTicks = (int) OI.initializeNumber(rampTicksLabel, this.rampTicks);
-    this.cruiseTicks = (int) OI.initializeNumber(cruiseTicksLabel, this.cruiseTicks);
+    leftPower = OI.initializeNumber(fixedLeftLabel, leftPower);
+    rightPower = OI.initializeNumber(fixedRightLabel, rightPower);
+    rampTicks = (int) OI.initializeNumber(rampTicksLabel, rampTicks);
+    cruiseTicks = (int) OI.initializeNumber(cruiseTicksLabel, cruiseTicks);
   }
 
   /**
