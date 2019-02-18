@@ -33,18 +33,25 @@ class Tread():
     followers = ()
 
     def setPower(self, power: float):
+        """ Sets percentage of voltage to allow to motors (control power output).
+        : param power : Power output from [-1.0, +1.0] - negative moves robot backward, positive moves robot forward.
+        """
         self.motor.set(power)
 
     def getDistance(self) -> float:
+        """ Returns distance traveled in feet. """
         return self.encDist
 
     def getCounts(self) -> int:
+        """ Returns counts last read from encoder. """
         return self.encCnts
 
     def getVelocity(self) -> float:
+        """ Returns velocity last read in ft/sec. """
         return self.encVel
 
     def zero(self):
+        """ Resets the encoder - best to avoid this - may remove eventually. """
         self.encoder.reset()
 
     def __setVoltageCompensation__(self, voltage : float) -> None:
@@ -209,6 +216,10 @@ class Drive(Subsystem):
     #     self.drive.tankDrive(leftPower, rightPower, squareInputs)
 
     def periodic(self):
+        """
+        This method is called automatically by the Scheduler and we take our
+        sensor readings once per run cycle here.
+        """
         self.__readSensors__()
         self.left.__readSensors__()
         self.right.__readSensors__()
@@ -229,38 +240,57 @@ class Drive(Subsystem):
         return self.right
 
     def getAngle(self) -> float:
+        """ Returns angle of rotation since last zeroing. """
         return self.yaw - self.yawZero
 
     def getAngleRaw(self) -> float:
+        """ Returns raw angle from NavX (never zeroed). """
         return self.yaw
 
     def getAccelX(self) -> float:
+        """ Returns acceleration in X-axis reported by built in accelerameter. """
         return self.accelX
 
     def getAccelY(self) -> float:
+        """ Returns acceleration in Y-axis reported by built in accelerameter. """
         return self.accelY
 
     def getAvgDistance(self):
+        """ Returns average of distance of left and right side encoders. """
         return (self.left.getDistance() + self.right.getDistance()) / 2
 
     def getAvgVelocity(self):
+        """
+        Returns average velocity reported by left/right side encoders.
+        Will be zero if spinning or stopped. Will be positive if moving forwards.
+        Will be negative if moving backwards.
+        """
         return (self.left.getVelocity() + self.right.getVelocity()) / 2
 
     def getAvgAbsVelocity(self):
+        """
+        Returns average of velocity magnitudes. Will be zero or close to zero
+        if not much movement. Large positive value means robot is spinning,
+        moving forward or backward quickly.
+        """
         return (abs(self.left.getVelocity()) + abs(self.right.getVelocity())) / 2
 
     def zeroDistance(self):
+        """ Zeros out tracked encoder values - you should never do this (will probably remove). """
         self.left.zero()
         self.right.zero()
 
     def zeroAngle(self):
+        """ Zeros out tracked angle information - you should never do this (will probably remove). """
         self.yawZero = self.yaw
 
     def zero(self):
+        """ Zeros out tracked distance and angle information - you should never do this (will probably remove). """
         self.zeroDistance()
         self.zeroAngle()
 
     def stop(self):
+        """ Stops all drive motors. """
         self.setPower(0, 0)
 
     def dashboardPeriodic(self):

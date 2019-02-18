@@ -23,6 +23,7 @@ class FlipFront(wpilib.command.InstantCommand):
     def __init__(self):
         super().__init__("FlipFront")
         self.updateDashboard()
+        self.setRunWhenDisabled(True)
 
     def initialize(self):
         global isFlipped
@@ -38,6 +39,7 @@ class ToggleBrakeMode(wpilib.command.InstantCommand):
     def __init__(self):
         super().__init__("ToggleBrakeMode")
         self.updateDashboard()
+        self.setRunWhenDisabled(True)
 
     def initialize(self):
         global enableBrakeMode
@@ -54,6 +56,11 @@ kModeArcade : int = 0
 kModeTank : int = 1
 kModeCurvature : int = 2
 kModeFixed : int = 3
+kModeIndexedArcade: int = 4
+kModeIndexedTank: int = 5
+
+kThrottlesIndexed = [ 0.125, 3/16.0, 0.25, 0.375, 0.5, 0.625, 0.75, 1.0 ]
+kRotationIndexed = [ 0.125, 3/16.0, 0.25, 5/16.0 ]
 
 class DriveHuman(Command):
 
@@ -99,6 +106,8 @@ class DriveHuman(Command):
             mc.addDefault("Arcade", kModeArcade)
             mc.addOption("Tank", kModeTank)
             mc.addOption("Curvature", kModeCurvature)
+            mc.addDefault("Indexed Arcade", kModeIndexedArcade)
+            mc.addDefault("Indexed Tank", kModeIndexedTank)
             mc.addOption("Fixed", kModeFixed)
             SmartDashboard.putData("Drive Mode", mc)
             modeChooser = mc
@@ -148,9 +157,43 @@ class DriveHuman(Command):
             self.dd.curvatureDrive(throttle, rotation, self.quickTurn)
         elif self.mode == kModeFixed:
             self.driveFixed(gain, rotGain)
+        elif self.mode == kModeIndexedArcade:
+            throttle = self.fromIndexTable(-oi.instance.readDriverAxis(self.kThrottleAxis), kThrottlesIndexed) * gain
+            rotation = self.fromIndexTable(oi.instance.readDriverAxis(self.kRotationAxis), kRotationIndexed) * gain
+            # Reduce rotation when traveling fast forward or backward
+            speed = abs(subsystems.drive.getAvgVelocity())
+            rotation = rotation * (0.3 + 0.7 * (15 - min(speed, 15)) / 15)
+            if isFlipped:
+                throttle = -throttle
+            self.dd.arcadeDrive(throttle, rotation, False)
+        elif self.mode == kModeIndexedTank:
+            leftPower = self.fromIndexTable(-oi.instance.readDriverAxis(self.kLeftAxis), kThrottlesIndexed) * gain
+            rightPower = self.fromIndexTable(-oi.instance.readDriverAxis(self.kRightAxis), kThrottlesIndexed) * gain
+            if isFlipped:
+                tmpLeft = -leftPower
+                leftPower = -rightPower
+                rightPower = tmpLeft
+            self.dd.tankDrive(leftPower, rightPower, False)
         else:
             # Unknown mode, stop driving
             subsystems.drive.stop()
+
+    def fromIndexTable(self, axisVal, toPowerTable) -> float:
+      """
+      Converts axis reading from joystick to power value from lookup table.
+      : param axisVal : Value read from axis - if less than minimum deflection, 0.0 is returned.
+      : param toPowerTable : Array of power values (any length), we use the magnitude of the axis value to look up a corresponding power output.
+      : return : The power to apply to the motors.
+      """
+      deflection: float = abs(axisVal)
+      if deflection < self.minDeflect:
+        return 0.0
+      n: int = len(toPowerTable)
+      idx: int = int(min((deflection - self.minDeflect) / (1.0 - self.minDeflect) * n, n - 1))
+      outPower: float = toPowerTable[idx]
+      if axisVal < 0:
+        outPower = -outPower
+      return outPower
 
     def isFinished(self) -> bool:
         return False
