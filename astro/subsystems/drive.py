@@ -142,6 +142,7 @@ class Drive(Subsystem):
 
         self.debug = False
         self.yawZero = 0
+        self.rollZero = 0
 
         self.navx = navx.ahrs.AHRS.create_spi()
         self.navx.setName("Drive", "NavX")
@@ -227,6 +228,7 @@ class Drive(Subsystem):
 
     def __readSensors__(self):
         self.yaw = self.navx.getYaw()
+        self.roll = self.navx.getRoll()
         self.accelX = self.accel.getX()
         self.accelY = self.accel.getY()
         self.accelZ = self.accel.getZ()
@@ -246,6 +248,19 @@ class Drive(Subsystem):
     def getAngleRaw(self) -> float:
         """ Returns raw angle from NavX (never zeroed). """
         return self.yaw
+
+    def getRoll(self) -> float:
+        """
+        Returns roll angle sinze last zeroing.
+        : return : Degrees leaning forward or backward. Will be negative if leaning forward and positive if leaning backward.
+        """
+        return self.roll - self.rollZero
+
+    def getRollRaw(self) -> float:
+        """
+        Returns raw roll value from NavX (never zeroed).
+        """
+        return self.roll
 
     def getAccelX(self) -> float:
         """ Returns acceleration in X-axis reported by built in accelerameter. """
@@ -276,16 +291,17 @@ class Drive(Subsystem):
         return (abs(self.left.getVelocity()) + abs(self.right.getVelocity())) / 2
 
     def zeroDistance(self):
-        """ Zeros out tracked encoder values - you should never do this (will probably remove). """
+        """ Zeros out tracked encoder values. """
         self.left.zero()
         self.right.zero()
 
     def zeroAngle(self):
-        """ Zeros out tracked angle information - you should never do this (will probably remove). """
+        """ Zeros out tracked angle information. """
         self.yawZero = self.yaw
+        self.rollZero = self.roll
 
     def zero(self):
-        """ Zeros out tracked distance and angle information - you should never do this (will probably remove). """
+        """ Zeros out tracked distance and angle information. """
         self.zeroDistance()
         self.zeroAngle()
 

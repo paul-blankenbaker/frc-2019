@@ -11,6 +11,7 @@ from commands.drive.measure import Measure
 from commands.drive.drivehuman import DriveHuman
 from commands.drive.driveticktimed import DriveTickTimed
 from commands.loadtest import LoadTest
+from commands.lift import ClimbUp, DriveToBackSensor, DriveToFrontSensor, ExtendBothLegs, RetractFrontLegs, RetractBackLegs
 
 class OI():
     debug: bool = True
@@ -64,13 +65,22 @@ class OI():
         self.autonChooser.addOption("Rotate Left", DriveTickTimed(-1.0, 1.0))
         SmartDashboard.putData("Auto mode", self.autonChooser)
 
-        # Set up utility controls
-        SmartDashboard.putData("Measure", Measure())
-
         # Drive controls
         DriveHuman.setupDashboardControls()
         SmartDashboard.putData("Brake Control", DriveHuman.createBrakeModeToggleCommand())
         SmartDashboard.putData("Flip Front", DriveHuman.createFlipFrontCommand())
+
+        # Set up utility controls
+        SmartDashboard.putData("Measure", Measure())
+
+        # Climber settings
+        SmartDashboard.putData(ClimbUp())        
+        if self.debug:
+          SmartDashboard.putData(ExtendBothLegs())
+          SmartDashboard.putData(DriveToFrontSensor())
+          SmartDashboard.putData(RetractFrontLegs())
+          SmartDashboard.putData(DriveToBackSensor())
+          SmartDashboard.putData(RetractBackLegs())
 
         # Debug tools (if enabled)
         if self.debug:
