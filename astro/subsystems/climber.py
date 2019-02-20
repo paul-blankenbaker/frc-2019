@@ -1,10 +1,188 @@
 import ctre
+from ctre.basemotorcontroller import BaseMotorController
+
 import wpilib
 from wpilib import SmartDashboard
 from wpilib.command.subsystem import Subsystem
 
-from subsystems import drive
+import subsystems
 import robotmap
+
+# Generic name for this subsystem
+group: str = "Climber"
+# Timeout for CAN commands
+timeout: int = 10
+
+def initializeMotorController(mc: BaseMotorController):
+  """
+  Initializes a motor controller to an "initial state" (applies common settings).
+
+  : param mc : A VictorSPX or TalonSRX to initialize.
+  """
+  if not wpilib.RobotBase.isSimulation():
+    mc.configFactoryDefault()
+    mc.configFactoryDefault(timeout)
+    mc.clearStickyFaults(timeout)
+    mc.setSafetyEnabled(False)
+    mc.setNeutralMode(ctre.NeutralMode.Brake)
+    mc.setInverted(False)
+
+class Leg(object):
+  """ Helper class to manage a single leg and floor sensor (robot has two). """
+
+  # Set to True when debugging or testing
+  debug: bool = True
+
+  # Name associated with this specific instance (like "Front")
+  name: str
+
+  # Used to treat floor detector like a digital input
+  floorSensor: wpilib.AnalogInput
+  floorDetector: wpilib.AnalogTrigger = None
+
+  # Sensor to detect when leg is fully retracted
+  retractedSensor: wpilib.DigitalInput
+  retractedCounter: wpilib.Counter
+
+  # Sensor to detect when leg is fully extended
+  extendedSensor: wpilib.DigitalInput
+  extendedCounter: wpilib.Counter
+
+  # Motor used to extend and retract leg
+  legMotor: BaseMotorController
+
+  def __init__(self, name: str, legMotor: BaseMotorController, extendedId: int, retractedId: int, floorId: int):
+    """
+    Construct new Leg instance.
+
+    : param name : Generic name for leg (like "Front").
+    : param legMotor : The motor controller to use for the leg.
+    : param extendedId : DIO port ID for sensor at fully extended position.
+    : param retractedId : DIO port ID for sensor at fully retracted position.
+    : param floorId : Analog port ID for floor sensor by leg.
+    """
+    self.name = name
+
+    self.floorSensor = wpilib.AnalogInput(floorId)
+    self.floorSensor.setName(group, name + " Floor Sensor")
+
+    if not wpilib.RobotBase.isSimulation():
+      self.floorDetector = wpilib.AnalogTrigger(floorId) # (wpilib.AnalogInput(floorId))
+      self.floorDetector.setName(group, name + " Floor Detect")
+      # If voltage goes below 1.0 change to False, when it goes above 2.0 change to True
+      self.floorDetector.setLimitsVoltage(1.0, 2.0)
+
+    initializeMotorController(legMotor)
+    legMotor.setName(group, name + " Leg Motor")
+    legMotor.setInverted(True)
+    legMotor.configContinuousCurrentLimit(20, timeout)
+    legMotor.enableCurrentLimit(True)
+    legMotor.configVoltageCompSaturation(9, timeout)
+    legMotor.enableVoltageCompensation(True)
+
+    self.legMotor = legMotor
+
+    self.retractedSensor = wpilib.DigitalInput(retractedId)
+    self.retractedSensor.setName(group, name + " Leg Retracted")
+    self.retractedCounter = wpilib.Counter(self.retractedSensor)
+    self.retractedCounter.setName(group, name + " Retract Count")
+
+    self.extendedSensor = wpilib.DigitalInput(extendedId)
+    self.extendedSensor.setName(group, name + " Leg Extended")
+    self.extendedCounter = wpilib.Counter(self.extendedSensor)
+    self.extendedCounter.setName(group, name + " Extend Count")
+
+  def isExtended(self) -> bool:
+    """
+    Determine if leg is position such that the fully extended sensor is tripped.
+    : return : State of sensor at the fully extended position.
+    """
+    return self.extendedSensor.get()
+
+  def getExtendedCount(self) -> int:
+    """
+    Get the current number of times that the sensor at the extended position has been triggered.
+    : return : Count that keeps incrementing as sensor is tripped.
+    """
+    return self.extendedCounter.get()
+
+  def hasExtended(self, priorCount: int) -> bool:
+    """
+    Determine if the leg has reached the extended position since a prior point in time.
+
+    IMPORTANT: This is the safest way to determine whether or not you've reached the fully
+    extended position as it catches the condition where the leg has moved off the sensor.
+
+    : param priorCount : The number of extensions from a prior call to getExtendedCount().
+
+    : return : True if sensor is tripped OR the number of times the sensor
+    has been tripped does not match the count you passed in.
+    """
+    return self.isExtended() or (self.getExtendedCount() != priorCount)
+
+  def isRetracted(self) -> bool:
+    """
+    Determine if leg is position such that the fully retracted sensor is tripped.
+    : return : State of sensor at the fully retracted position.
+    """
+    return self.retractedSensor.get()
+
+  def getRetractedCount(self) -> int:
+    """
+    Get the current number of times that the sensor at the retracted position has been triggered.
+    : return : Count that keeps incrementing as sensor is tripped.
+    """
+    return self.retractedCounter.get()
+
+  def hasRetracted(self, priorCount: int) -> bool:
+    """
+    Determine if the leg has reached the retracted position since a prior point in time.
+
+    IMPORTANT: This is the safest way to determine whether or not you've reached the fully
+    retracted position as it catches the condition where the leg has moved off the sensor.
+
+    : param priorCount : The number of retractions from a prior call to
+    getRetractedCount().
+
+    : return : True if sensor is tripped OR the number of times the sensor
+    has been tripped does not match the count you passed in.
+    """
+    return self.isRetracted() or (self.getRetractedCount() != priorCount)
+
+  def isOverFloor(self) -> bool:
+    """
+    Indicates whether the floor sensor by the leg indicates if
+    we are over the floor or up in the air.
+
+    : return : True if over floor, False if up in air.
+    """
+    if self.floorDetector == None:
+      # Simulator does not support AnalogTrigger objects
+      return self.floorSensor.getVoltage() > 1.5
+    return self.floorDetector.getTriggerState()
+
+  def setMotorPower(self, power: float):
+    """
+    Set the power on the motor that extends and retracts the leg.
+
+    NOTE: There are NO SAFETY CHECKS. Make sure that your command stops
+    the motor when fully extended or retracted.
+
+    : param power : Power to apply in range of [-1, +1]. Positive
+    to extend, negative to retract.
+    """
+    return self.legMotor.set(power)
+
+  def periodic(self):
+    """ Periodic checks and dashboard updates. """
+    n = self.name
+    if self.debug == True:
+      SmartDashboard.putBoolean(n + " Extended", self.isExtended())
+      SmartDashboard.putBoolean(n + " Retracted", self.isRetracted())
+      SmartDashboard.putNumber(n + " Extend Cnt", self.getExtendedCount())
+      SmartDashboard.putNumber(n + " Retract Cnt", self.getRetractedCount())
+      SmartDashboard.putNumber(n + " On Ground", self.isOverFloor())
+
 
 class Climber(Subsystem):
   """
@@ -12,190 +190,57 @@ class Climber(Subsystem):
   robot and drive it onto the platform at the end of the game.
   """
 
+  debug: bool = True
+
+  # Used to manage front and back legs of robot
+  frontLeg: Leg
+  backLeg: Leg
+
+  # Used to operate wheels at bottom of back legs
+  wheels: BaseMotorController
+
+
   def __init__(self):
-    super().__init__('Climber')
-    self.debug: bool = True
-    timeout = 10
-    group = "Climber"
+    super().__init__(group)
 
-    self.frontFloorSensor: wpilib.AnalogInput = wpilib.AnalogInput(robotmap.kAiClimbGroundFront)
-    self.frontFloorSensor.setName(group, "Front Floor Detect")
+    frontLegMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbFrontLeg)
+    self.frontLeg = Leg("Front", frontLegMotor, robotmap.kDioClimbFrontTop, robotmap.kDioClimbFrontBot, robotmap.kAiClimbGroundFront)
 
-    self.backFloorSensor: wpilib.AnalogInput = wpilib.AnalogInput(robotmap.kAiClimbGroundBack)
-    self.backFloorSensor.setName(group, "Back Floor Detect")
-
-    self.backLiftMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbBackLeg)
-    self.backLiftMotor.setName(group, "Back Leg Motor")
-    self.backLiftMotor.setInverted(True)
-
-    self.frontLiftMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbFrontLeg)
-    self.frontLiftMotor.setName(group, "Front Leg Motor")
-    self.frontLiftMotor.setInverted(True)
+    backLegMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbBackLeg)
+    self.backLeg = Leg("Back", backLegMotor, robotmap.kDioClimbBackTop, robotmap.kDioClimbBackBot, robotmap.kAiClimbGroundBack)
 
     wheelLeftMotor: ctre.WPI_VictorSPX = ctre.WPI_VictorSPX(robotmap.kCanClimbLeftWheel)
+    initializeMotorController(wheelLeftMotor)
     wheelLeftMotor.setName(group, "Left Wheel")
 
     wheelRightMotor: ctre.WPI_VictorSPX = ctre.WPI_VictorSPX(robotmap.kCanClimbRightWheel)
+    initializeMotorController(wheelRightMotor)
     wheelRightMotor.setName(group, "Right Wheel")
-
-    self.frontRetractedSensor: wpilib.DigitalInput = wpilib.DigitalInput(robotmap.kDioClimbFrontBot)
-    self.frontRetractedSensor.setName(group, "Front Leg Retracted")
-
-    self.frontExtendedSensor: wpilib.DigitalInput = wpilib.DigitalInput(robotmap.kDioClimbFrontTop)
-    self.frontExtendedSensor.setName(group, "Front Leg Extended")
-
-    self.backRetractedSensor: wpilib.DigitalInput = wpilib.DigitalInput(robotmap.kDioClimbBackBot)
-    self.backRetractedSensor.setName(group, "Back Leg Retracted")
-
-    self.backExtendedSensor: wpilib.DigitalInput = wpilib.DigitalInput(robotmap.kDioClimbBackTop)
-    self.backExtendedSensor.setName(group, "Back Leg Extended")
-
-    # Apply common motor settings
-    for motor in [self.backLiftMotor, self.frontLiftMotor, wheelLeftMotor, wheelRightMotor]:
-        motor.configFactoryDefault(timeout)
-        motor.clearStickyFaults(timeout)
-        motor.setSafetyEnabled(False)
-        motor.setNeutralMode(ctre.NeutralMode.Brake)
-        motor.setInverted(False)
+    wheelRightMotor.follow(wheelLeftMotor)
 
     # Operate wheel motors as one unit
     self.wheels = wheelLeftMotor
-    wheelRightMotor.follow(self.wheels)
 
-    for motor in [self.backLiftMotor, self.frontLiftMotor]:
-        motor.configContinuousCurrentLimit(
-            20, timeout)  # 15 Amps per motor
-        motor.enableCurrentLimit(True)
-        motor.configVoltageCompSaturation(
-            9, timeout)  # Sets saturation value
-        # Compensates for lower voltages
-        motor.enableVoltageCompensation(True)
+  def getFrontLeg(self) -> Leg:
+    """
+    Get access to sensors and motors associated with leg at front of robot.
+    : return : Leg object that you can query and control.
+    """
+    return self.frontLeg
+
+  def getBackLeg(self) -> Leg:
+    """
+    Get access to sensors and motors associated with leg at back of robot.
+    : return : Leg object that you can query and control.
+    """
+    return self.backLeg
 
   def getLean(self) -> float:
     """
     Get the number of degrees the robot is tipping forward (-) or backward (+).
     : return : A negative value if leaning forward, positive if leaning backward.
     """
-    return drive.getRoll()
-
-  def isFullyExtendedFront(self) -> bool:
-    """
-    Indicates whether front leg is fully extended.
-
-    : return : True when front leg is extended such that sensor is tripped.
-    """
-    return self.frontExtendedSensor.get()
-
-  def isFullyExtendedBack(self) -> bool:
-    """
-    Indicates whether back leg is fully extended.
-
-    : return : True when back leg is extended such that sensor is tripped.
-    """
-    return self.backExtendedSensor.get()
-
-  def isFullyExtendedBoth(self) -> bool:
-    """
-    Indicates whether both legs are fully extended.
-
-    : return : True when both legs are extended such that both sensors are tripped.
-    """
-    return self.isFullyExtendedFront() and self.isFullyExtendedBack()
-
-  def isFullyRetractedFront(self) -> bool:
-    """
-    Indicates whether front leg is fully retracted.
-
-    : return : True when front leg is retracted such that sensor is tripped.
-    """
-    return self.frontRetractedSensor.get()
-
-  def isFullyRetractedBack(self) -> bool:
-    """
-    Indicates whether back leg is fully retracted.
-
-    : return : True when back leg is retracted such that sensor is tripped.
-    """
-    return self.backRetractedSensor.get()
-
-  def isFullyRetractedBoth(self) -> bool:
-    """
-    Indicates whether both legs are fully retracted.
-
-    : return : True when both legs are retracted such that both sensors are tripped.
-    """
-    return self.isFullyRetractedFront() and self.isFullyRetractedBack()
-
-  def isFrontOverGround(self) -> bool:
-    """
-    Checks to see if the front floor sensor is detecting the ground.
-    : return : True if sensor is tripped indicating that it is over ground.
-    """
-    return self.frontFloorSensor.getVoltage() < 1.5
-
-  def isBackOverGround(self):
-    """
-    Checks to see if the back floor sensor is detecting the ground.
-    : return : True if sensor is tripped indicating that it is over ground.
-    """
-    return self.backFloorSensor.getVoltage() < 1.5
-
-  def moveFrontLegs(self, lift: float, maxLean: float = 2.0):
-    """
-    Control power output of back leg lift motor to extend/retract leg.
-  
-    :param lift : Power for leg motor - positive to extend, negative to retract.
-    :param maxLean : Maximum lean allowed before stopping in degrees.
-    """
-
-    lean = self.getLean()
-
-    if lift > 0:
-        # They want to extend legs (robot go up)
-        if self.isFullyExtendedFront():
-            self.stopFront()
-        elif lean < maxLean:
-            # Not leaning too far back, OK to extend front legs
-            self.frontLiftMotor.set(lift)
-        else:
-            self.stopFront()
-    else:
-        # They want legs to retract (robot go down)
-        if self.isFullyRetractedFront():
-            self.stopFront()
-        elif lean > -maxLean:
-            # Not leaning too far forward, OK to retract front legs
-            self.frontLiftMotor.set(lift)
-        else:
-            self.stopFront()
-
-  def moveBackLegs(self, lift: float, maxLean: float = 2.0):
-    """
-    Control power output of front leg lift motor to extend/retract leg.
-  
-    :param lift : Power for leg motor - positive to extend, negative to retract.
-    :param maxLean : Maximum lean allowed before stopping in degrees.
-    """
-    lean = self.getLean()
-
-    if lift > 0:
-        # They want to extend legs (robot go up)
-        if self.isFullyExtendedBack():
-            self.stopBack()
-        elif lean > -maxLean:
-            # Not leaning too far forward, OK to extend back legs
-            self.backLiftMotor.set(lift)
-        else:
-            self.stopBack()
-    else:
-        # They want legs to retract (robot go down)
-        if self.isFullyRetractedBack():
-            self.stopBack()
-        elif lean < maxLean:
-            # Not leaning too far backward, OK to retract back legs
-            self.backLiftMotor.set(lift)
-        else:
-            self.stopBack()
+    return subsystems.drive.getRoll()
 
   def setWheelPower(self, power: float = 0.25):
     """
@@ -204,32 +249,18 @@ class Climber(Subsystem):
     """
     self.wheels.set(power)
 
-  def stopFront(self):
-    """ Stops front leg motor. """
-    self.frontLiftMotor.set(0)
-
-  def stopBack(self):
-    """ Stops back leg motor. """
-    self.backLiftMotor.set(0)
-
-  def stopDrive(self):
+  def stopWheels(self):
     """ Stops back leg wheels from spinning. """
     self.wheels.set(0)
 
   def stopAll(self):
     """ Stops all leg and wheel motors. """
-    self.stopFront()
-    self.stopBack()
-    self.stopDrive()
+    self.frontLeg.setMotorPower(0)
+    self.backLeg.setMotorPower(0)
+    self.stopWheels()
 
   def periodic(self):
-    """ Periodic checks and dashboard updates. """
-    if self.debug == True:
-      SmartDashboard.putBoolean("Front Extended", self.isFullyExtendedFront())
-      SmartDashboard.putBoolean("Back Extened", self.isFullyExtendedBack())
-      SmartDashboard.putBoolean("Front Retracted", self.isFullyRetractedFront())
-      SmartDashboard.putBoolean("Back Retracted", self.isFullyRetractedBack())
-      SmartDashboard.putBoolean("Robot Lean", self.getLean())
-      SmartDashboard.putNumber("Front On Ground", self.isFrontOverGround())
-      SmartDashboard.putNumber("Back On Ground", self.isBackOverGround())
+    """ Periodic checks, sensor readings and dashboard updates. """
+    self.frontLeg.periodic()
+    self.backLeg.periodic()
 

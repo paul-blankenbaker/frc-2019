@@ -74,13 +74,13 @@ class OI():
         SmartDashboard.putData("Measure", Measure())
 
         # Climber settings
-        SmartDashboard.putData(ClimbUp())        
+        SmartDashboard.putData("Full Auto Climb", ClimbUp())        
         if self.debug:
-          SmartDashboard.putData(ExtendBothLegs())
-          SmartDashboard.putData(DriveToFrontSensor())
-          SmartDashboard.putData(RetractFrontLegs())
-          SmartDashboard.putData(DriveToBackSensor())
-          SmartDashboard.putData(RetractBackLegs())
+          SmartDashboard.putData("Extend Both Legs", ExtendBothLegs())
+          SmartDashboard.putData("Drive to Front Sensor", DriveToFrontSensor())
+          SmartDashboard.putData("Retract Front Legs", RetractFrontLegs())
+          SmartDashboard.putData("Drive to Back Sensor", DriveToBackSensor())
+          SmartDashboard.putData("Retract Back Legs", RetractBackLegs())
 
         # Debug tools (if enabled)
         if self.debug:

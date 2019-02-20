@@ -1,7 +1,8 @@
 from wpilib.command import Command
 from wpilib.command import CommandGroup
 from wpilib import SmartDashboard
-from subsystems import drive, climber
+import subsystems
+from subsystems.climber import Climber, Leg
 import oi
 
 class LiftCommand(Command):
@@ -12,14 +13,40 @@ class LiftCommand(Command):
   to provide an execute() method.
   """
 
-  def __init__(self, name):
+  # Set to True if you want lift commands to control the main drive
+  # as well. Set to False if you want operator to be able to run
+  # main drive train while lift commands are running.
+  controlDrive: bool = True
+
+  # Parts associated with climber subsystem
+  climber: Climber
+  frontLeg: Leg
+  backLeg: Leg
+
+  # Counts of extensions/retractions when command starts.
+  # Used to detect when limit reached even if we move off sensor.
+  backLegExtended: int = 0
+  backLegRetracted: int = 0
+  frontLegExtended: int = 0
+  frontLegRetracted: int = 0
+
+  def __init__(self, name: str):
+    """
+    Base constructor requires all subsystems - you MUST extend this class!
+    : param name : Name for your implementing class.
+    """
     super().__init__(name)
-    self.requires(climber)
+    self.requires(subsystems.climber)
     # NOTE: We may not use it, but I think we want full control
     # of the drive for all lift operations (we don't want operator
     # messing with drive wheels)
-    self.requires(drive)
+    if self.controlDrive:
+      self.requires(subsystems.drive)
     self.debug = True
+
+    self.climber = subsystems.climber
+    self.frontLeg = self.climber.getFrontLeg()
+    self.backLeg = self.climber.getBackLeg()
 
     # Following settings can be adjusted on dashbard if debug is set to true
     self.extendSpeed: float = 0.9
@@ -30,6 +57,9 @@ class LiftCommand(Command):
     self.configure()
 
   def configure(self):
+    """
+    Reads/updates configurable settings from dashboard.
+    """
     if self.debug:
       # If still debugging/testing climber, allow getting values from dashboard
       self.extendSpeed: float = oi.OI.initializeNumber("Climb Extend Power", self.extendSpeed)
@@ -40,22 +70,84 @@ class LiftCommand(Command):
       self.maxLeanDown: float = oi.OI.initializeNumber("Climb Max Lean Down", self.maxLeanDown)
 
   def initialize(self):
+    """
+    This should handle initialization for most cases, if you need to
+    override this method, make sure you invoke this base implementation
+    as well (super call).
+    """
+    # Get initial counts at leg end point sensors so we can detect
+    # if sensor is tripped while command is running even if leg
+    # moves off sensor
+    self.frontLegExtended = self.frontLeg.getExtendedCount()
+    self.frontLegRetracted = self.frontLeg.getRetractedCount()
+    self.backLegExtended = self.backLeg.getExtendedCount()
+    self.backLegRetracted = self.backLeg.getRetractedCount()
+    # Load current user configuration from dashboard 
     self.configure()
+    # Make sure main drive motors are off
+    if self.controlDrive:
+      subsystems.drive.stop()
 
   def end(self):
     """ Stops all leg and wheel motors when any climber command terminates. """
-    climber.stopAll()
+    subsystems.climber.stopAll()
 
   def interrupted(self):
+    """ See end(). """
     self.end()
+
+  def abort(self):
+    """
+    Will cancel this command or the command group it belongs too - use this if things go really BAD.
+    """
+    cg: CommandGroup = self.getGroup()
+    cgLast: CommandGroup = cg
+    while cg != None:
+      cgLast = cg
+      cg = cg.getGroup
+
+    if cgLast != None:
+      # Command was part of CommandGroup, cancel the entire group
+      cgLast.cancel()
+    else:
+      # Stand along command, can call cancel directly
+      self.cancel()
+
+  def hasFrontFullyExtended(self):
+    """
+    Will return true if the front leg extended sensor has been 
+    tripped since the command started.
+    """
+    return self.frontLeg.hasExtended(self.frontLegExtended)
+
+  def hasFrontFullyRetracted(self):
+    """
+    Will return true if the front leg retracted sensor has been 
+    tripped since the command started.
+    """
+    return self.frontLeg.hasRetracted(self.frontLegRetracted)
+
+  def hasBackFullyExtended(self):
+    """
+    Will return true if the back leg extended sensor has been 
+    tripped since the command started.
+    """
+    return self.backLeg.hasExtended(self.backLegExtended)
+
+  def hasBackFullyRetracted(self):
+    """
+    Will return true if the back leg retracted sensor has been 
+    tripped since the command started.
+    """
+    return self.backLeg.hasRetracted(self.backLegRetracted)
 
   def getLean(self) -> float:
     """
     Returns degrees that robot is leaning forward (-) or backward (+).
     """
-    climber.getLean()
+    return subsystems.climber.getLean()
 
-  def isLeaningForward(self, lean) -> bool:
+  def isLeaningForward(self, lean: float) -> bool:
     """
     Indicates whether robot lean value is forward or backward.
     : param lean : Signed lean value.
@@ -85,13 +177,25 @@ class LiftCommand(Command):
     lean: float = self.getLean()
 
     if self.isLeaningForward(lean):
-      backPower = self.reducePower(backPower, lean)
+      if lean < -maxLean:
+        # Leaning too far backward! Turn off front motor
+        # until back catches up
+        backPower = 0
+      else:
+        # Reduce back motor power a bit to let front catch up
+        backPower = self.reducePower(backPower, lean)
     else:
-      frontPower = self.reducePower(frontPower, lean)
+      if lean > maxLean:
+        # Leaning too far forward! Turn off front motor
+        # until back catches up
+        frontPower = 0
+      else:
+        # Reduce front motor power a bit to let back catch up
+        frontPower = self.reducePower(frontPower, lean)
 
     # Apply computed power
-    climber.moveFrontLegs(frontPower, maxLean)
-    climber.moveBackLegs(backPower, maxLean)
+    self.frontLeg.setMotorPower(frontPower)
+    self.backLeg.setMotorPower(backPower)
 
   def maintainBackLegs(self):
     """
@@ -110,13 +214,13 @@ class LiftCommand(Command):
 
     if lean < -forwardLeanLimit:
       # Leaning too far forward, need to retract back legs
-      climber.moveBackLegs(self.retractSpeed, -forwardLeanLimit)
+      self.backLeg.setMotorPower(self.retractSpeed)
     elif lean > backwardLeanLimit:
       # Leaning too far back, need to extend back legs
-      climber.moveBackLegs(self.extendSpeed, backwardLeanLimit)
+      self.backLeg.setMotorPower(self.extendSpeed)
     elif lean > (desiredLean - offLean) and lean < (desiredLean + offLean):
       # Back in good range, turn motors off until something changes a lot
-      climber.stopBack()
+      self.backLeg.setMotorPower(0)
 
 
 class ExtendBothLegs(LiftCommand):
@@ -128,7 +232,12 @@ class ExtendBothLegs(LiftCommand):
         self.fullyExtendBothLegs()
 
     def isFinished(self):
-        return climber.isFullyExtendedBoth()
+        """
+        Done after once both legs have triggered the fully extended sensors.
+
+        NOTE: They do not need to trigger the sensors simultaneously!
+        """
+        return self.hasBackFullyExtended() and self.hasFrontFullyExtended()
 
 
 class RetractFrontLegs(LiftCommand):
@@ -142,12 +251,20 @@ class RetractFrontLegs(LiftCommand):
 
         # Retract front legs
         maxLean = self.maxLeanDown
-        climber.moveFrontLegs(self.retractSpeed, maxLean)
+        lean: float = self.getLean()
+
+        if lean < -maxLean:
+          # Leaning too far forward, stop retracting front legs until
+          # back catches up
+          self.frontLeg.setMotorPower(0)
+        else:
+          self.frontLeg.setMotorPower(self.retractSpeed)
 
     def isFinished(self):
-        # Hmmm, should we stop if sensor is not indicating that front
-        # is over ground?
-        return climber.isFullyRetractedFront() or not climber.isFrontOverGround()
+        # Safety check to completely stop if front is not over floor
+        if not self.frontLeg.isOverFloor():
+          self.abort()
+        return self.hasFrontFullyRetracted()
 
 
 class RetractBackLegs(LiftCommand):
@@ -157,14 +274,19 @@ class RetractBackLegs(LiftCommand):
 
     def execute(self):
         # Retract both legs (keep them up)
-        maxLean = self.maxLeanDown
-        climber.moveBackLegs(self.retractSpeed, maxLean)
-        climber.moveFrontLegs(self.retractSpeed, maxLean)
+        self.backLeg.setMotorPower(self.retractSpeed)
 
     def isFinished(self):
-        # Hmmm, should we stop if sensor is not indicating that back
-        # is over ground?
-        return climber.isFullyRetractedBack() or not climber.isBackOverGround()
+        # Safety check to completely stop if front is not over floor
+        if not self.backLeg.isOverFloor():
+          self.abort()
+        
+        # Safety check to completely stop if we start tipping back too
+        # far (means the robot is not far enough on the podium)
+        if self.getLean() > self.maxLeanDown:
+          self.abort()
+
+        return self.hasBackFullyRetracted()
 
 
 class DriveToFrontSensor(LiftCommand):
@@ -173,15 +295,16 @@ class DriveToFrontSensor(LiftCommand):
         super().__init__("DriveToFrontSensor")
 
     def execute(self):
-        climber.setWheelPower(self.wheelPower)
+        subsystems.climber.setWheelPower(self.wheelPower)
         # Keep robot level with back legs while driving forward
         self.maintainBackLegs()
         # Should we also be driving main drive wheels?
         # Maybe minimal power so climber wheels don't have to fight
-        drive.setPower(0.15, 0.15)
+        if self.controlDrive:
+          subsystems.drive.setPower(0.15, 0.15)
 
     def isFinished(self):
-        return climber.isFrontOverGround()
+        return self.frontLeg.isOverFloor()
 
 
 class DriveToBackSensor(DriveToFrontSensor):
@@ -191,7 +314,7 @@ class DriveToBackSensor(DriveToFrontSensor):
         self.setName("DriveToBackSensor")
 
     def isFinished(self):
-        return climber.isBackOverGround()
+        return self.backLeg.isOverFloor()
 
 
 class ClimbUp(CommandGroup):
@@ -200,9 +323,10 @@ class ClimbUp(CommandGroup):
     so that it is on top the podium.
     """
     def __init__(self):
-        self.addSequential(ExtendBothLegs())
-        self.addSequential(DriveToFrontSensor())
-        self.addSequential(RetractFrontLegs())
-        self.addSequential(DriveToBackSensor())
-        self.addSequential(RetractBackLegs())
-        # TODO: Determine command to drive rest of way
+      super().__init__("AutonClimb")
+      self.addSequential(ExtendBothLegs())
+      self.addSequential(DriveToFrontSensor())
+      self.addSequential(RetractFrontLegs())
+      self.addSequential(DriveToBackSensor())
+      self.addSequential(RetractBackLegs())
+      # TODO: Determine command to drive rest of way
