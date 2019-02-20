@@ -5,11 +5,39 @@ from pyfrc.physics import motor_cfgs, tankmodel
 from pyfrc.physics.units import units
 
 import sim.simComms as simComms
+import robotmap
+
+class CountUpdater(object):
+  def __init__(self, idx):
+    self.idx = idx
+    self.cntIdx = -1
+    self.lastVal = False
+
+  def update(self, hal_data):
+    curVal = hal_data['dio'][self.idx]['value']
+    if curVal and curVal != self.lastVal:
+      if self.cntIdx == -1:
+        for i in range(0, len(hal_data['counter'])):
+          if self.idx == hal_data['counter'][i]['up_source_channel']:
+            self.cntIdx = i
+            break
+
+      if self.cntIdx != -1:
+        cnt = 1 + hal_data['counter'][self.cntIdx]['count']
+        hal_data['counter'][self.cntIdx]['count'] = cnt
+        
+    self.lastVal = curVal
 
 class PhysicsEngine(object):
     def __init__(self, controller):
         self.controller = controller
         self.position = 0
+        self.counters = (
+          CountUpdater(robotmap.kDioClimbBackBot),
+          CountUpdater(robotmap.kDioClimbBackTop),
+          CountUpdater(robotmap.kDioClimbFrontBot),
+          CountUpdater(robotmap.kDioClimbFrontTop)
+        )
 
         self.DistPerPulseL = 6/12 * math.pi / 256
         self.DistPerPulseR = 6/12 * math.pi / 256
@@ -32,15 +60,25 @@ class PhysicsEngine(object):
 
         self.deadZone=0.10
 
+    # def updateAnalog(self, hal_data, idx: int, volts: float):
+    #   keys = ("analog_in", "analog_trigger")
+    #   attrs = ("value", "voltage", "avg_voltage")
+
+    #   for key in keys:
+    #     for attr in attrs:
+    #       hal_data[key][idx][attr] = volts
+      
     def update_sim(self, hal_data, now, timeDiff):
         # Simulate the drivetrain
         can = hal_data['CAN']
 
-        if not 10 in can or not 20 in can:
-            return
+        left = 0
+        right = 0
 
-        left = -can[10]['value']
-        right = can[20]['value']
+        if 10 in can:
+          left = -can[10]['value']
+        if 20 in can:
+          right = can[20]['value']
 
         if(abs(left)<self.deadZone): left = 0
         if(abs(right)<self.deadZone): right = 0
@@ -57,3 +95,16 @@ class PhysicsEngine(object):
 
         hal_data['encoder'][0]['count'] = int(self.distance[0]/self.DistPerPulseL)
         hal_data['encoder'][1]['count'] = int(self.distance[1]/self.DistPerPulseR)
+
+        # Update counters based on rising edge changes in DIO states
+        for counter in self.counters:
+          counter.update(hal_data)
+
+        # Simulate climber sensors
+        # hal_data['dio'][robotmap.kDioClimbBackBot]["value"] = True
+        # hal_data['dio'][robotmap.kDioClimbBackTop]["value"] = False
+        # hal_data['dio'][robotmap.kDioClimbFrontBot]["value"] = True
+        # hal_data['dio'][robotmap.kDioClimbFrontTop]["value"] = False
+
+        #self.updateAnalog(hal_data, robotmap.kAiClimbGroundFront, 3.1)
+        #self.updateAnalog(hal_data, robotmap.kAiClimbGroundBack, 3.2)
