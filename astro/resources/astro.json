@@ -1,0 +1,776 @@
+{
+  "tabPane": [
+    {
+      "title": "LiveWindow",
+      "autoPopulate": true,
+      "autoPopulatePrefix": "LiveWindow/",
+      "widgetPane": {
+        "gridSize": 128.0,
+        "showGrid": true,
+        "hgap": 16.0,
+        "vgap": 16.0,
+        "tiles": {
+          "0,0": {
+            "size": [
+              2,
+              4
+            ],
+            "content": {
+              "_type": "Subsystem Layout",
+              "_source0": "network_table:///LiveWindow/Drive",
+              "_title": "Drive",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Encoder",
+                  "_source0": "network_table:///LiveWindow/Drive/LeftEnc",
+                  "_title": "LeftEnc"
+                },
+                {
+                  "_type": "Gyro",
+                  "_source0": "network_table:///LiveWindow/Drive/NavX",
+                  "_title": "NavX",
+                  "Visuals/Major tick spacing": 45.0,
+                  "Visuals/Starting angle": 180.0,
+                  "Visuals/Show tick mark ring": true
+                },
+                {
+                  "_type": "3-Axis Accelerometer",
+                  "_source0": "network_table:///LiveWindow/Drive/Accel",
+                  "_title": "Accel",
+                  "Accelerometer/Range": "k16G",
+                  "Visuals/Show value": true,
+                  "Visuals/Precision": 2,
+                  "Visuals/Show tick marks": false
+                },
+                {
+                  "_type": "Encoder",
+                  "_source0": "network_table:///LiveWindow/Drive/RightEnc",
+                  "_title": "RightEnc"
+                },
+                {
+                  "_type": "Differential Drivebase",
+                  "_source0": "network_table:///LiveWindow/Drive/Differential",
+                  "_title": "Differential",
+                  "Wheels/Number of wheels": 4,
+                  "Wheels/Wheel diameter": 80.0,
+                  "Visuals/Show velocity vectors": true
+                }
+              ]
+            }
+          },
+          "2,0": {
+            "size": [
+              2,
+              4
+            ],
+            "content": {
+              "_type": "Subsystem Layout",
+              "_source0": "network_table:///LiveWindow/Ungrouped",
+              "_title": "Ungrouped",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Basic Subsystem",
+                  "_source0": "network_table:///LiveWindow/Ungrouped/Drive",
+                  "_title": "Drive"
+                },
+                {
+                  "_type": "Basic Subsystem",
+                  "_source0": "network_table:///LiveWindow/Ungrouped/Climber",
+                  "_title": "Climber"
+                }
+              ]
+            }
+          },
+          "4,0": {
+            "size": [
+              3,
+              5
+            ],
+            "content": {
+              "_type": "Subsystem Layout",
+              "_source0": "network_table:///LiveWindow/Climber",
+              "_title": "Climber",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Motor",
+                  "_title": "Front Leg Motor",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Voltage View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Floor Sensor",
+                  "_title": "Front Floor Sensor",
+                  "Range/Min": 0.0,
+                  "Range/Max": 5.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Orientation": "HORIZONTAL",
+                  "Visuals/Number of tick marks": 5
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Retracted/Value",
+                  "_title": "Front Leg Retracted/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Retract Count/Value",
+                  "_title": "Front Retract Count/Value"
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Extended/Value",
+                  "_title": "Front Leg Extended/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Extend Count/Value",
+                  "_title": "Front Extend Count/Value"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Motor",
+                  "_title": "Back Leg Motor",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Voltage View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Floor Sensor",
+                  "_title": "Back Floor Sensor",
+                  "Range/Min": 0.0,
+                  "Range/Max": 5.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Orientation": "HORIZONTAL",
+                  "Visuals/Number of tick marks": 5
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Retracted/Value",
+                  "_title": "Back Leg Retracted/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Retract Count/Value",
+                  "_title": "Back Retract Count/Value"
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Extended/Value",
+                  "_title": "Back Leg Extended/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Extend Count/Value",
+                  "_title": "Back Extend Count/Value"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Left Wheel",
+                  "_title": "Left Wheel",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Right Wheel",
+                  "_title": "Right Wheel",
+                  "Visuals/Orientation": "HORIZONTAL"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Drive",
+      "autoPopulate": false,
+      "autoPopulatePrefix": "",
+      "widgetPane": {
+        "gridSize": 128.0,
+        "showGrid": true,
+        "hgap": 16.0,
+        "vgap": 16.0,
+        "tiles": {
+          "4,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "List Layout",
+              "Layout/Label position": "BOTTOM",
+              "_children": []
+            }
+          },
+          "0,0": {
+            "size": [
+              2,
+              2
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "Auton",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "ComboBox Chooser",
+                  "_source0": "network_table:///SmartDashboard/Auto mode",
+                  "_title": "Auton"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Ramp Ticks",
+                  "_title": "Ramp Ticks"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Cruise Ticks",
+                  "_title": "Cruise Ticks"
+                }
+              ]
+            }
+          },
+          "0,2": {
+            "size": [
+              2,
+              2
+            ],
+            "content": {
+              "_type": "Grid Layout",
+              "_title": "Settings",
+              "Layout/Number of columns": 3,
+              "Layout/Number of rows": 3,
+              "Layout/Label position": "BOTTOM",
+              "_children": {
+                "0,0": {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Fixed Left",
+                  "_title": "Fixed Left"
+                },
+                "1,0": {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Fixed Right",
+                  "_title": "Fixed Right"
+                },
+                "0,1": {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Slow Gain",
+                  "_title": "Slow Gain"
+                },
+                "1,1": {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Rotation Gain",
+                  "_title": "Rotation Gain"
+                }
+              }
+            }
+          },
+          "4,0": {
+            "size": [
+              4,
+              4
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "List Layout",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Differential Drivebase",
+                  "_source0": "network_table:///SmartDashboard/DifferentialDrive",
+                  "_title": "Drive",
+                  "Wheels/Number of wheels": 4,
+                  "Wheels/Wheel diameter": 80.0,
+                  "Visuals/Show velocity vectors": true
+                },
+                {
+                  "_type": "Grid Layout",
+                  "_title": "Indicators",
+                  "Layout/Number of columns": 3,
+                  "Layout/Number of rows": 3,
+                  "Layout/Label position": "BOTTOM",
+                  "_children": {
+                    "0,0": {
+                      "_type": "Text View",
+                      "_source0": "network_table:///SmartDashboard/Game Mode",
+                      "_title": "Game Mode"
+                    },
+                    "0,1": {
+                      "_type": "Boolean Box",
+                      "_source0": "network_table:///SmartDashboard/Brake Mode",
+                      "_title": "Brake Mode",
+                      "Colors/Color when true": "#7CFC00FF",
+                      "Colors/Color when false": "#8B0000FF"
+                    },
+                    "1,1": {
+                      "_type": "Boolean Box",
+                      "_source0": "network_table:///SmartDashboard/Flipped Front",
+                      "_title": "Front Flipped",
+                      "Colors/Color when true": "#7CFC00FF",
+                      "Colors/Color when false": "#8B0000FF"
+                    },
+                    "1,0": {
+                      "_type": "Text View",
+                      "_source0": "network_table:///SmartDashboard/Game Time",
+                      "_title": "Game Time"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "2,0": {
+            "size": [
+              2,
+              3
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "Controls",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "ComboBox Chooser",
+                  "_source0": "network_table:///SmartDashboard/Drive Mode",
+                  "_title": "Drive Mode"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Brake Control",
+                  "_title": "Brake Toggle"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Flip Front",
+                  "_title": "Flip Front"
+                },
+                {
+                  "_type": "Toggle Switch",
+                  "_source0": "network_table:///SmartDashboard/Square Inputs",
+                  "_title": "Square Inputs"
+                },
+                {
+                  "_type": "Toggle Switch",
+                  "_source0": "network_table:///SmartDashboard/Quick Turn",
+                  "_title": "Quick Turn"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Measure",
+      "autoPopulate": false,
+      "autoPopulatePrefix": "",
+      "widgetPane": {
+        "gridSize": 128.0,
+        "showGrid": true,
+        "hgap": 16.0,
+        "vgap": 16.0,
+        "tiles": {
+          "0,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Measure",
+              "_title": "Drive Ruler"
+            }
+          },
+          "1,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Left Cnts",
+              "_title": "Counts (left)"
+            }
+          },
+          "2,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Right Cnts",
+              "_title": "Counts (right)"
+            }
+          },
+          "1,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Left Dist",
+              "_title": "Distance (left)"
+            }
+          },
+          "2,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Right Dist",
+              "_title": "Distance (right)"
+            }
+          },
+          "1,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Left Vel",
+              "_title": "Dist/Sec (left)"
+            }
+          },
+          "2,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Right Vel",
+              "_title": "Dist/Sec (right)"
+            }
+          },
+          "3,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Yaw Measured",
+              "_title": "Angle (rel)"
+            }
+          },
+          "3,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Yaw NavX",
+              "_title": "Bearing (abs)"
+            }
+          },
+          "4,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Accel X",
+              "_title": "Accel (X)"
+            }
+          },
+          "4,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Accel Y",
+              "_title": "Accel (Y)"
+            }
+          },
+          "4,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///SmartDashboard/Bump",
+              "_title": "Hit Something",
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Performance",
+      "autoPopulate": false,
+      "autoPopulatePrefix": "",
+      "widgetPane": {
+        "gridSize": 128.0,
+        "showGrid": true,
+        "hgap": 16.0,
+        "vgap": 16.0,
+        "tiles": {
+          "3,0": {
+            "size": [
+              1,
+              3
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "Language",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/CPU Load Test",
+                  "_title": "CPU Test"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/CPU Test Loops",
+                  "_title": "Test Loops"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/CPU Test Secs",
+                  "_title": "Test Time"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/CPU Test Hz",
+                  "_title": "Test Hz"
+                }
+              ]
+            }
+          },
+          "2,0": {
+            "size": [
+              1,
+              3
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "Periodic",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Measure Performance",
+                  "_title": "Periodic"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Run Last",
+                  "_title": "Last Run"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Run Avg",
+                  "_title": "Avg Run"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///SmartDashboard/Run Max",
+                  "_title": "Max Run"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Climber",
+      "autoPopulate": false,
+      "autoPopulatePrefix": "",
+      "widgetPane": {
+        "gridSize": 128.0,
+        "showGrid": true,
+        "hgap": 16.0,
+        "vgap": 16.0,
+        "tiles": {
+          "0,0": {
+            "size": [
+              3,
+              6
+            ],
+            "content": {
+              "_type": "Subsystem Layout",
+              "_source0": "network_table:///LiveWindow/Climber",
+              "_title": "LiveWindow/Climber",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Motor",
+                  "_title": "Front Leg Motor",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Voltage View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Floor Sensor",
+                  "_title": "Front Floor Sensor",
+                  "Range/Min": 0.0,
+                  "Range/Max": 5.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Orientation": "HORIZONTAL",
+                  "Visuals/Number of tick marks": 5
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Retracted/Value",
+                  "_title": "Front Leg Retracted/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Retract Count/Value",
+                  "_title": "Front Retract Count/Value"
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Leg Extended/Value",
+                  "_title": "Front Leg Extended/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Front Extend Count/Value",
+                  "_title": "Front Extend Count/Value"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Motor",
+                  "_title": "Back Leg Motor",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Voltage View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Floor Sensor",
+                  "_title": "Back Floor Sensor",
+                  "Range/Min": 0.0,
+                  "Range/Max": 5.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Orientation": "HORIZONTAL",
+                  "Visuals/Number of tick marks": 5
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Retracted/Value",
+                  "_title": "Back Leg Retracted/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Retract Count/Value",
+                  "_title": "Back Retract Count/Value"
+                },
+                {
+                  "_type": "Boolean Box",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Leg Extended/Value",
+                  "_title": "Back Leg Extended/Value",
+                  "Colors/Color when true": "#7CFC00FF",
+                  "Colors/Color when false": "#8B0000FF"
+                },
+                {
+                  "_type": "Text View",
+                  "_source0": "network_table:///LiveWindow/Climber/Back Extend Count/Value",
+                  "_title": "Back Extend Count/Value"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Left Wheel",
+                  "_title": "Left Wheel",
+                  "Visuals/Orientation": "HORIZONTAL"
+                },
+                {
+                  "_type": "Speed Controller",
+                  "_source0": "network_table:///LiveWindow/Climber/Right Wheel",
+                  "_title": "Right Wheel",
+                  "Visuals/Orientation": "HORIZONTAL"
+                }
+              ]
+            }
+          },
+          "5,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Full Auto Climb",
+              "_title": "Full Auton Climb"
+            }
+          },
+          "3,0": {
+            "size": [
+              2,
+              3
+            ],
+            "content": {
+              "_type": "List Layout",
+              "_title": "Auton Climb Commands",
+              "Layout/Label position": "BOTTOM",
+              "_children": [
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Extend Both Legs",
+                  "_title": "Lift Robot"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Drive to Front Sensor",
+                  "_title": "Drive To Front"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Retract Front Legs",
+                  "_title": "Lift Front Leg"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Drive to Back Sensor",
+                  "_title": "Drive To Back"
+                },
+                {
+                  "_type": "Command",
+                  "_source0": "network_table:///SmartDashboard/Retract Back Legs",
+                  "_title": "Lift Back Leg"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "windowGeometry": {
+    "x": -1814.0,
+    "y": 8.0,
+    "width": 1660.0,
+    "height": 1005.0
+  }
+}
