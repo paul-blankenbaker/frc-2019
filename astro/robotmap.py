@@ -6,7 +6,7 @@ config: Preferences = Preferences.getInstance()
 
 def getConfigInt(key: str, defVal: int) -> int:
   """
-  Looks up value an integer value from the robot configuration file
+  Looks up an integer value from the robot configuration file
   or creates the value if not present.
 
   : param key : Key to use to look up/set value.
@@ -22,6 +22,26 @@ def getConfigInt(key: str, defVal: int) -> int:
     # preferences editor
     val: int = defVal
     config.putInt(key, val)
+  return val
+
+def getConfigFloat(key: str, defVal: float) -> float:
+  """
+  Looks a float value from the robot configuration file
+  or creates the value if not present.
+
+  : param key : Key to use to look up/set value.
+  : param defVal : Default value to set/return if not found.
+  : return : Value from configuration file or default if not found.
+  """
+  global config
+  if config.containsKey(key):
+    val: float = config.getFloat(key, defVal)
+  else:
+    # Value not set in config, set to default value provided
+    # so we will see it and be able to edit it in the system
+    # preferences editor
+    val: float = defVal
+    config.putFloat(key, val)
   return val
 
 # Known robots that might have slight variations in configuration

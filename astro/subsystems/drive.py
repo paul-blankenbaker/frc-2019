@@ -137,12 +137,16 @@ class Tread():
 
 class Drive(Subsystem):
 
+    debug: bool = False
+
+    # Used to keep track of zeroing for minimal
+    # impact in "zeroing" NavX readings
+    yawZero: float = 0
+    rollZero: float = 0
+    pitchZero: float = 0
+
     def __init__(self):
         super().__init__('Drive')
-
-        self.debug = False
-        self.yawZero = 0
-        self.rollZero = 0
 
         self.navx = navx.ahrs.AHRS.create_spi()
         self.navx.setName("Drive", "NavX")
@@ -229,6 +233,7 @@ class Drive(Subsystem):
     def __readSensors__(self):
         self.yaw = self.navx.getYaw()
         self.roll = self.navx.getRoll()
+        self.pitch = self.navx.getPitch()
         self.accelX = self.accel.getX()
         self.accelY = self.accel.getY()
         self.accelZ = self.accel.getZ()
@@ -251,8 +256,8 @@ class Drive(Subsystem):
 
     def getRoll(self) -> float:
         """
-        Returns roll angle sinze last zeroing.
-        : return : Degrees leaning forward or backward. Will be negative if leaning forward and positive if leaning backward.
+        Returns roll angle since last zeroing.
+        : return : Roll reading in degrees from NavX since last zeroing.
         """
         return self.roll - self.rollZero
 
@@ -261,6 +266,19 @@ class Drive(Subsystem):
         Returns raw roll value from NavX (never zeroed).
         """
         return self.roll
+
+    def getPitch(self) -> float:
+        """
+        Returns pitch angle since last zeroing.
+        : return : Pitch reading in degrees from NavX since last zeroing.
+        """
+        return self.pitch - self.pitchZero
+
+    def getPitchRaw(self) -> float:
+        """
+        Returns raw pitch value from NavX (never zeroed).
+        """
+        return self.pitch
 
     def getAccelX(self) -> float:
         """ Returns acceleration in X-axis reported by built in accelerameter. """
@@ -299,6 +317,7 @@ class Drive(Subsystem):
         """ Zeros out tracked angle information. """
         self.yawZero = self.yaw
         self.rollZero = self.roll
+        self.pitchZero = self.roll
 
     def zero(self):
         """ Zeros out tracked distance and angle information. """

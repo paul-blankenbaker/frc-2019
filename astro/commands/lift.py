@@ -1,6 +1,7 @@
 from wpilib.command import Command
 from wpilib.command import CommandGroup
 from wpilib import SmartDashboard
+from robotmap import getConfigFloat
 import subsystems
 from subsystems.climber import Climber, Leg
 import oi
@@ -58,16 +59,15 @@ class LiftCommand(Command):
 
   def configure(self):
     """
-    Reads/updates configurable settings from dashboard.
+    Reads/updates configurable settings that may vary on each robot.
     """
-    if self.debug:
-      # If still debugging/testing climber, allow getting values from dashboard
-      self.extendSpeed: float = oi.OI.initializeNumber("Climb Extend Power", self.extendSpeed)
-      # Hmmm, should we just show it as a negative number on the dashboard
-      self.retractSpeed: float = -oi.OI.initializeNumber("Climb Retract Power", -self.retractSpeed)
-      self.wheelPower: float = oi.OI.initializeNumber("Climb Wheel Power", self.wheelPower)
-      self.maxLeanUp: float = oi.OI.initializeNumber("Climb Max Lean Up", self.maxLeanUp)
-      self.maxLeanDown: float = oi.OI.initializeNumber("Climb Max Lean Down", self.maxLeanDown)
+    # If still debugging/testing climber, allow getting values from dashboard
+    self.extendSpeed: float = getConfigFloat("ClimbExtendPower", self.extendSpeed)
+    # Hmmm, should we just show it as a negative number on the dashboard
+    self.retractSpeed: float = -getConfigFloat("ClimbRetractPower", -self.retractSpeed)
+    self.wheelPower: float = getConfigFloat("ClimbWheelPower", self.wheelPower)
+    self.maxLeanUp: float = getConfigFloat("ClimbMaxLeanUp", self.maxLeanUp)
+    self.maxLeanDown: float = getConfigFloat("ClimbMaxLeanDown", self.maxLeanDown)
 
   def initialize(self):
     """
@@ -277,7 +277,7 @@ class RetractBackLegs(LiftCommand):
         self.backLeg.setMotorPower(self.retractSpeed)
 
     def isFinished(self):
-        # Safety check to completely stop if front is not over floor
+        # Safety check to completely stop if back floor sensor doesn't see floor
         if not self.backLeg.isOverFloor():
           self.abort()
         
@@ -298,12 +298,13 @@ class DriveToFrontSensor(LiftCommand):
         subsystems.climber.setWheelPower(self.wheelPower)
         # Keep robot level with back legs while driving forward
         self.maintainBackLegs()
-        # Should we also be driving main drive wheels?
+        # TODO: Should we also be driving main drive wheels?
         # Maybe minimal power so climber wheels don't have to fight
         if self.controlDrive:
           subsystems.drive.setPower(0.15, 0.15)
 
     def isFinished(self):
+        """ Done once the floor sensor by the front leg detects the floor. """
         return self.frontLeg.isOverFloor()
 
 
@@ -314,6 +315,7 @@ class DriveToBackSensor(DriveToFrontSensor):
         self.setName("DriveToBackSensor")
 
     def isFinished(self):
+        """ Done once the floor sensor by the back leg detects the floor. """
         return self.backLeg.isOverFloor()
 
 

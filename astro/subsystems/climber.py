@@ -30,7 +30,7 @@ class Leg(object):
   """ Helper class to manage a single leg and floor sensor (robot has two). """
 
   # Set to True when debugging or testing
-  debug: bool = True
+  debug: bool = False
 
   # Name associated with this specific instance (like "Front")
   name: str
@@ -189,17 +189,28 @@ class Climber(Subsystem):
   robot and drive it onto the platform at the end of the game.
   """
 
-  debug: bool = True
+  # Set to True for extra diagnostics on SmartDashboard
+  debug: bool = False
 
   # Used to manage front and back legs of robot
   frontLeg: Leg
   backLeg: Leg
 
-  # Used to operate wheels at bottom of back legs
+  # Used to operate wheels at bottom of back legs (either TalonSRX or VictorSPX)
   wheels: BaseMotorController
 
-
   def __init__(self):
+    """
+    Constructor for the Climber subsystem.
+
+    This method is responsible for creating all of the hardware objects
+    that the Climber will manage. Conceptually we will treat this as
+    3 types of things to manage:
+
+    1. The front Leg (lift motor, two end sensors and one floor sensor)
+    2. The back Leg (lift motor, two end sensors and one floor sensor)
+    3. The wheels on the bottom of the back leg (two motors).
+    """
     super().__init__(group)
 
     frontLegMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbFrontLeg)
@@ -249,6 +260,9 @@ class Climber(Subsystem):
     Get the number of degrees the robot is tipping forward (-) or backward (+).
     : return : A negative value if leaning forward, positive if leaning backward.
     """
+    if robotmap.kCompetitionBot:
+      return subsystems.drive.getPitch()
+    # Practice bot has roboRIO turned 90 degrees
     return subsystems.drive.getRoll()
 
   def setWheelPower(self, power: float = 0.25):
