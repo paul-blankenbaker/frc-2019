@@ -1,3 +1,5 @@
 drive-py/.deploy_cfg
 **/__pycache__
 **/.pytest_cache
+**/*.bak
+astro/networktables.ini

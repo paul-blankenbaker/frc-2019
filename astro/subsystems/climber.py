@@ -25,7 +25,6 @@ def initializeMotorController(mc: BaseMotorController):
     mc.clearStickyFaults(timeout)
     mc.setSafetyEnabled(False)
     mc.setNeutralMode(ctre.NeutralMode.Brake)
-    mc.setInverted(False)
 
 class Leg(object):
   """ Helper class to manage a single leg and floor sensor (robot has two). """
@@ -209,11 +208,21 @@ class Climber(Subsystem):
     backLegMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbBackLeg)
     self.backLeg = Leg("Back", backLegMotor, robotmap.kDioClimbBackTop, robotmap.kDioClimbBackBot, robotmap.kAiClimbGroundBack)
 
-    wheelLeftMotor: ctre.WPI_VictorSPX = ctre.WPI_VictorSPX(robotmap.kCanClimbLeftWheel)
+    # Astro v1 has VictorSPX instead of TalonSRX found on competition bot
+    if robotmap.kRobotId == robotmap.kAstroV1:
+      wheelLeftMotor = ctre.WPI_VictorSPX(robotmap.kCanClimbLeftWheel)
+      wheelLeftMotor.setInverted(False)
+      wheelRightMotor = ctre.WPI_VictorSPX(robotmap.kCanClimbRightWheel)
+      wheelRightMotor.setInverted(False)
+    else:
+      wheelLeftMotor = ctre.WPI_TalonSRX(robotmap.kCanClimbLeftWheel)
+      wheelLeftMotor.setInverted(False)
+      wheelRightMotor = ctre.WPI_TalonSRX(robotmap.kCanClimbRightWheel)
+      wheelRightMotor.setInverted(True)
+
     initializeMotorController(wheelLeftMotor)
     wheelLeftMotor.setName(group, "Left Wheel")
 
-    wheelRightMotor: ctre.WPI_VictorSPX = ctre.WPI_VictorSPX(robotmap.kCanClimbRightWheel)
     initializeMotorController(wheelRightMotor)
     wheelRightMotor.setName(group, "Right Wheel")
     wheelRightMotor.follow(wheelLeftMotor)
