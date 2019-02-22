@@ -172,15 +172,12 @@ class Leg(object):
     """
     return self.legMotor.set(power)
 
-  def periodic(self):
+  def periodic(self, updateDashboard: bool):
     """ Periodic checks and dashboard updates. """
-    n = self.name
-    if self.debug == True:
-      SmartDashboard.putBoolean(n + " Extended", self.isExtended())
-      SmartDashboard.putBoolean(n + " Retracted", self.isRetracted())
-      SmartDashboard.putNumber(n + " Extend Cnt", self.getExtendedCount())
-      SmartDashboard.putNumber(n + " Retract Cnt", self.getRetractedCount())
-      SmartDashboard.putNumber(n + " On Ground", self.isOverFloor())
+    if updateDashboard:
+      if self.debug == True:
+        n = self.name
+        SmartDashboard.putNumber(n + " Floor Volts", self.floorSensor.getVoltage())
 
 
 class Climber(Subsystem):
@@ -191,6 +188,9 @@ class Climber(Subsystem):
 
   # Set to True for extra diagnostics on SmartDashboard
   debug: bool = False
+
+  # Used to limit how often we update SmartDashboard values
+  periodicCnt: int = 0
 
   # Used to manage front and back legs of robot
   frontLeg: Leg
@@ -212,6 +212,7 @@ class Climber(Subsystem):
     3. The wheels on the bottom of the back leg (two motors).
     """
     super().__init__(group)
+    self.setName("Subsystem", group)
 
     frontLegMotor: ctre.WPI_TalonSRX = ctre.WPI_TalonSRX(robotmap.kCanClimbFrontLeg)
     self.frontLeg = Leg("Front", frontLegMotor, robotmap.kDioClimbFrontTop, robotmap.kDioClimbFrontBot, robotmap.kAiClimbGroundFront)
@@ -284,6 +285,11 @@ class Climber(Subsystem):
 
   def periodic(self):
     """ Periodic checks, sensor readings and dashboard updates. """
-    self.frontLeg.periodic()
-    self.backLeg.periodic()
+    self.periodicCnt += 1
+    dashboardUpdate = ((self.periodicCnt % 10) == 0)
+    self.frontLeg.periodic(dashboardUpdate)
+    self.backLeg.periodic(dashboardUpdate)
+    if dashboardUpdate:
+      # Probably always want to see how much the robot is leaning
+      SmartDashboard.putNumber("Lean", self.getLean())
 

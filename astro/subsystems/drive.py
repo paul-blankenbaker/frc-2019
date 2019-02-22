@@ -147,6 +147,7 @@ class Drive(Subsystem):
 
     def __init__(self):
         super().__init__('Drive')
+        self.setName("Subsystem", "Drive")
 
         self.navx = navx.ahrs.AHRS.create_spi()
         self.navx.setName("Drive", "NavX")
