@@ -46,9 +46,9 @@ def getConfigFloat(key: str, defVal: float) -> float:
 
 # Known robots that might have slight variations in configuration
 # that we want to deploy the code to
-kAstroV2: int = 0
+kAstroV2: int = 2
 kAstroV1: int = 1
-kSynapse: int = 2
+kSynapse: int = 0
 
 # ID of robot we are deploying to
 kRobotId: int = getConfigInt("RobotId", kAstroV2)
