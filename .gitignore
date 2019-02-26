@@ -1,5 +1,6 @@
-drive-py/.deploy_cfg
+**/.deploy_cfg
 **/__pycache__
 **/.pytest_cache
 **/*.bak
-astro/networktables.ini
+**/networktables.ini
+**/.wpilib/wpilib_preferences.json
