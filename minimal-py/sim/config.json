@@ -1,0 +1,18 @@
+{
+  "pyfrc": {
+
+  	"robot": {
+  	  "w": 2.67,
+  	  "h": 2.67,
+      "start_positions": [
+        {"x":3,"y":10,"angle":0,"name":"Back Left"},
+        {"x":6,"y":10,"angle":0,"name":"Front Left"},
+        {"x":6,"y":12.85,"angle":0,"name":"Mid Left"},
+        {"x":6,"y":14.85,"angle":0,"name":"Mid Right"},
+        {"x":6,"y":18,"angle":0,"name":"Front Right"},
+        {"x":3,"y":18,"angle":0,"name":"Back Right"}
+      ]
+  	}
+  }
+}
+
