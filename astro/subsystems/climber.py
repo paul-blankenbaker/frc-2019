@@ -36,8 +36,7 @@ class Leg(object):
   name: str
 
   # Used to treat floor detector like a digital input
-  floorSensor: wpilib.AnalogInput
-  floorDetector: wpilib.AnalogTrigger = None
+  floorSensor: wpilib.AnalogInput = None
 
   # Sensor to detect when leg is fully retracted
   retractedSensor: wpilib.DigitalInput
@@ -64,12 +63,6 @@ class Leg(object):
 
     self.floorSensor = wpilib.AnalogInput(floorId)
     self.floorSensor.setName(group, name + " Floor Sensor")
-
-    if not wpilib.RobotBase.isSimulation():
-      self.floorDetector = wpilib.AnalogTrigger(floorId) # (wpilib.AnalogInput(floorId))
-      self.floorDetector.setName(group, name + " Floor Detect")
-      # If voltage goes below 1.0 change to False, when it goes above 2.0 change to True
-      self.floorDetector.setLimitsVoltage(1.0, 2.0)
 
     initializeMotorController(legMotor)
     legMotor.setName(group, name + " Leg Motor")
@@ -155,11 +148,8 @@ class Leg(object):
 
     : return : True if over floor, False if up in air.
     """
-    if self.floorDetector == None:
-      # Simulator does not support AnalogTrigger objects
-      return self.floorSensor.getVoltage() > 1.5
-    return self.floorDetector.getTriggerState()
-
+    return self.floorSensor.getVoltage() > 1.5
+  
   def setMotorPower(self, power: float):
     """
     Set the power on the motor that extends and retracts the leg.
