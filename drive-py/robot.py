@@ -12,7 +12,7 @@ class MyRobot(commandbased.CommandBasedRobot):
   debug: bool = True
 
   # Set to True to disable ALL subsystems and operator interface
-  bareBones: bool = True
+  bareBones: bool = False
 
   def robotInit(self):
     """ Initalizes all subsystems and user controls. """
