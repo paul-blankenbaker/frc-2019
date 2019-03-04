@@ -28,8 +28,8 @@ class PhysicsEngine(object):
     if len(pwm) < 2:
       return
 
-    left = -pwm[0]['value']
-    right = pwm[1]['value']
+    left =  -pwm[0]['value']
+    right = -pwm[2]['value']
 
     x,y,angle = self.drivetrain.get_distance(left, right, timeDiff)
     self.controller.distance_drive(x, y, angle)
